@@ -1,0 +1,51 @@
+# ─── AI / Dev tooling ──────────────────────────────────────────────
+.agents/
+skills-lock.json
+PROJECT_CONTEXT.md
+
+# ─── Node / Frontend ───────────────────────────────────────────────
+node_modules/
+dist/
+dist-ssr/
+
+# Vite temp files
+*.local
+vite.config.js.timestamp-*
+
+# ─── Environment & Secrets ─────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ─── Firebase ──────────────────────────────────────────────────────
+.firebase/
+# service account key — NEVER commit
+backend/serviceAccountKey.json
+# backend secrets
+backend/.env
+
+# ─── Python / Backend ──────────────────────────────────────────────
+backend/venv/
+backend/__pycache__/
+__pycache__/
+*.py[cod]
+*.pyo
+
+# ─── OS artefacts ──────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── Logs ──────────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ─── Editor ────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+
+mockData.js
