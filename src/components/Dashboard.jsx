@@ -2,8 +2,10 @@ import StatsRow from './StatsRow';
 import ActivityFeed from './ActivityFeed';
 import WeeklyChart from './WeeklyChart';
 
-export default function Dashboard({ activities, onDelete }) {
-  const total = activities.reduce((s, a) => s + a.co2, 0);
+export default function Dashboard({ activities, onDelete, onEntryUpdate, user, settings = {} }) {
+  const dailyTarget = settings.dailyTargetKg ?? 10;
+  const weeklyTarget = dailyTarget * 7;
+  const total = activities.reduce((s, a) => s + (a.co2 ?? a.co2_score_kg ?? 0), 0);
 
   return (
     <div className="max-w-3xl mx-auto space-y-10">
@@ -17,9 +19,9 @@ export default function Dashboard({ activities, onDelete }) {
           <span className="text-lg font-normal text-gray-400 ml-2">kg CO₂</span>
         </p>
         <p className="text-sm text-gray-400 mt-2">
-          Target: 70 kg/week &nbsp;·&nbsp;
-          <span className={total > 70 ? 'text-red-500' : 'text-green-600'}>
-            {total > 70 ? `${(total - 70).toFixed(1)} kg over` : `${(70 - total).toFixed(1)} kg remaining`}
+          Target: {weeklyTarget} kg/week &nbsp;·&nbsp;
+          <span className={total > weeklyTarget ? 'text-red-500' : 'text-green-600'}>
+            {total > weeklyTarget ? `${(total - weeklyTarget).toFixed(1)} kg over` : `${(weeklyTarget - total).toFixed(1)} kg remaining`}
           </span>
         </p>
       </section>
@@ -28,10 +30,10 @@ export default function Dashboard({ activities, onDelete }) {
       <StatsRow activities={activities} />
 
       {/* Chart */}
-      <WeeklyChart />
+      <WeeklyChart activities={activities} settings={settings} />
 
       {/* Feed */}
-      <ActivityFeed activities={activities} onDelete={onDelete} />
+      <ActivityFeed activities={activities} onDelete={onDelete} onEntryUpdate={onEntryUpdate} user={user} />
     </div>
   );
 }

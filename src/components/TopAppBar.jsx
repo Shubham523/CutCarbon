@@ -22,7 +22,7 @@ export default function TopAppBar({ activeView, onNavigate, onLogout }) {
         {/* Mobile brand */}
         <div className="flex md:hidden items-center gap-2">
           <Leaf size={15} className="text-green-600" aria-hidden="true" />
-          <span className="text-sm font-semibold text-gray-900">CFootprints</span>
+          <span className="text-sm font-semibold text-gray-900">CutCarbon</span>
         </div>
 
         {/* Page title (desktop) */}
