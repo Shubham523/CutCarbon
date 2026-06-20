@@ -116,14 +116,23 @@ async def process_grocery(user_id: str, file: UploadFile = File(...)):
 
         # Run Gemini vision analysis
         prompt = """
-Analyze this grocery item photo or receipt. Identify all major food items or ingredients.
-Calculate an estimated carbon footprint score (CO2 emissions in kg) for each item based on general environmental science metrics.
+Scan the entire image and identify ALL distinct physical products, groceries, or electronics present.
+For each distinct object found, calculate its embodied or farm-to-fork carbon footprint 
+(the estimated CO2e in kg generated from production, manufacturing, raw materials, agriculture, and global transport). 
+Do NOT return 0 simply because an object is currently inactive, unplugged, or food. If exact data is 
+unavailable, provide a scientifically backed estimate based on the item's material composition, weight, and food type.
 
-Return ONLY a raw JSON object matching this exact format with no extra text:
-{
-  "items": ["Item Name 1", "Item Name 2"],
-  "co2_score_kg": 4.2
-}
+Return ONLY a raw JSON Array of objects matching this exact format with no extra text:
+[
+  {
+    "detected_name": "CMF by Nothing Buds",
+    "co2_score_kg": 25.0
+  },
+  {
+    "detected_name": "Granny Smith Apple",
+    "co2_score_kg": 0.06
+  }
+]
 """
         response = gemini_client.models.generate_content(
             model="models/gemini-2.5-flash",
@@ -145,34 +154,35 @@ Return ONLY a raw JSON object matching this exact format with no extra text:
         # Parse JSON — fall back to safe defaults if the model misbehaves
         try:
             data = json.loads(response_text)
-            detected_items = data.get("items", [])
-            co2_score_kg   = float(data.get("co2_score_kg", 0.0))
+            if isinstance(data, list):
+                parsed_items = []
+                for item in data:
+                    detected_name = item.get("detected_name", "Scanned Item")
+                    co2_score_kg = float(item.get("co2_score_kg", 0.0))
+                    parsed_items.append({
+                        "detected_name": detected_name,
+                        "co2_score_kg": co2_score_kg
+                    })
+            else:
+                # Fallback if the AI returned a single object instead of a list
+                detected_name = data.get("detected_name", "Scanned Item")
+                co2_score_kg = float(data.get("co2_score_kg", 0.0))
+                parsed_items = [{
+                    "detected_name": detected_name,
+                    "co2_score_kg": co2_score_kg
+                }]
         except (json.JSONDecodeError, ValueError) as e:
             print(f"   ⚠ JSON parse failed: {e} | raw: {response_text}")
-            detected_items = ["Unknown items"]
-            co2_score_kg   = 0.0
+            parsed_items = [{
+                "detected_name": "Scanned Item",
+                "co2_score_kg": 0.0
+            }]
 
-        print(f"   → Items: {detected_items} | CO₂: {co2_score_kg} kg")
-
-        # Write real AI-analysed data to Firestore — subcollection under the user document
-        log_ref = db.collection("users").document(user_id).collection("logs").document()
-        log_ref.set({
-            "user_id":       user_id,
-            "timestamp":     firestore.SERVER_TIMESTAMP,
-            "type":          "grocery",
-            "category":      "Groceries",
-            "icon":          "🛒",
-            "items":         detected_items,
-            "description":   f"{len(detected_items)} item{'s' if len(detected_items) != 1 else ''} scanned",
-            "co2_score_kg":  co2_score_kg,
-        })
-        print(f"🔥 Written to Firestore! Path is: users/{user_id}/logs/{log_ref.id}")
+        print(f"   → Parsed items: {parsed_items}")
 
         return {
-            "status":       "success",
-            "items":        detected_items,
-            "co2_score_kg": co2_score_kg,
-            "doc_id":       log_ref.id,
+            "status": "success",
+            "items":  parsed_items,
         }
     except Exception as e:
         print("--- DETAILED BACKEND CRASH LOG ---")
@@ -201,4 +211,4 @@ def save_settings(payload: SettingsPayload):
     )
     print(f"🔥 Settings saved for user: {payload.user_id}")
 
-    return {"status": "success", "saved": payload.settings}
+    return {"status": "success", "saved": payload.settings}

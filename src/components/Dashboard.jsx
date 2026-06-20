@@ -1,6 +1,8 @@
 import StatsRow from './StatsRow';
 import ActivityFeed from './ActivityFeed';
 import WeeklyChart from './WeeklyChart';
+import ContributorsAndActions from './ContributorsAndActions';
+import NetZeroScale from './NetZeroScale';
 
 export default function Dashboard({ activities, onDelete, onEntryUpdate, user, settings = {} }) {
   const dailyTarget = settings.dailyTargetKg ?? 10;
@@ -9,6 +11,9 @@ export default function Dashboard({ activities, onDelete, onEntryUpdate, user, s
 
   return (
     <div className="max-w-3xl mx-auto space-y-10">
+      {/* Net-Zero Scale */}
+      <NetZeroScale activities={activities} />
+
       {/* Hero number */}
       <section aria-label="Total footprint this week">
         <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-1">
@@ -31,6 +36,9 @@ export default function Dashboard({ activities, onDelete, onEntryUpdate, user, s
 
       {/* Chart */}
       <WeeklyChart activities={activities} settings={settings} />
+
+      {/* Contributors & Actions */}
+      <ContributorsAndActions activities={activities} />
 
       {/* Feed */}
       <ActivityFeed activities={activities} onDelete={onDelete} onEntryUpdate={onEntryUpdate} user={user} />

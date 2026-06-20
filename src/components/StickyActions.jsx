@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { collection, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, Timestamp, getDocs, query, where, writeBatch, doc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { processAndMergeActivities } from '../utils/activityParser';
 
@@ -167,14 +167,14 @@ const calculateTransitImpact = (durationMs, mode = 'solo_car', passengers = 1) =
 
 
 export default function StickyActions({ onAction, user }) {
-  const [scanning,           setScanning]           = useState(false);
+  const [analyzing,          setAnalyzing]          = useState(false);
   const [syncing,            setSyncing]            = useState(false);
   const [detailedActivities, setDetailedActivities] = useState([]);
 
   const groceryInputRef = useRef(null);
 
-  // ── Grocery scan handler ───────────────────────────────────────────────────
-  const handleGroceryFileChange = async (e) => {
+  // ── Grocery analysis handler ───────────────────────────────────────────────
+  const handleGroceryAnalysis = async (e) => {
     const file = e.target.files[0];
     if (!file || !user) return;
 
@@ -182,20 +182,49 @@ export default function StickyActions({ onAction, user }) {
     const formData = new FormData();
     formData.append('file', file);
 
-    setScanning(true);
+    setAnalyzing(true);
     try {
       const response = await fetch(
         `http://127.0.0.1:8000/api/process-grocery?user_id=${user.uid}`,
         { method: 'POST', body: formData },
       );
+      if (!response.ok) {
+        throw new Error(`API returned status ${response.status}`);
+      }
       const data = await response.json();
       console.log('Grocery processing response:', data);
-      alert(`Scan successful! CO2 Score: ${data.co2_score_kg} kg`);
-      onAction(`🛒 Groceries logged — ${data.co2_score_kg} kg CO₂`);
+
+      const items = Array.isArray(data.items) ? data.items : [];
+      if (items.length === 0) {
+        alert('Analysis completed, but no items were detected.');
+        return;
+      }
+
+      // Write each item to Firestore as a batch
+      const batch = writeBatch(db);
+      items.forEach((item) => {
+        const logRef = doc(collection(db, `users/${user.uid}/logs`));
+        batch.set(logRef, {
+          user_id: user.uid,
+          timestamp: serverTimestamp(),
+          type: "scanned_product",
+          category: "Groceries",
+          icon: "🛒",
+          item_name: item.detected_name || "Scanned Item",
+          description: item.detected_name || "Scanned Item",
+          co2_score_kg: typeof item.co2_score_kg === 'number' ? item.co2_score_kg : 0,
+        });
+      });
+      await batch.commit();
+      console.log(`🔥 Written ${items.length} item(s) to Firestore from frontend!`);
+
+      alert(`${items.length} items analyzed and added!`);
+      onAction(`🛒 ${items.length} items analyzed and added!`);
     } catch (error) {
       console.error('Grocery upload error:', error);
+      alert('Failed to analyze image. Please try again.');
     } finally {
-      setScanning(false);
+      setAnalyzing(false);
       e.target.value = ''; // allow re-selecting the same file
     }
   };
@@ -244,14 +273,28 @@ export default function StickyActions({ onAction, user }) {
       );
 
       if (!aggregateRes.ok) {
-        console.error('Google Fit API error:', aggregateRes.status, await aggregateRes.text());
-        alert('Could not reach Google Fit. Make sure you granted Fitness permissions at sign-in.');
-        setSyncing(false);
-        return;
+        throw aggregateRes;
       }
 
       const aggregateData = await aggregateRes.json();
       console.log('👉 STEP 2: Raw aggregate payload:', aggregateData);
+
+      // ── STEP 2.5: Fetch existing logs from Firestore to deduplicate ────────
+      const q = query(
+        collection(db, 'users', user.uid, 'logs'),
+        where('type', 'in', ['fitness', 'transport'])
+      );
+      const querySnapshot = await getDocs(q);
+      const existingStartTimes = new Set();
+      querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (data.timestamp) {
+          const ms = data.timestamp.toDate
+            ? data.timestamp.toDate().getTime()
+            : new Date(data.timestamp).getTime();
+          existingStartTimes.add(ms);
+        }
+      });
 
       // ── STEP 3: Extract all meaningful activity segments ──────────────────
       // Reads activityCode from the nested dataset structure (more reliable than
@@ -291,15 +334,26 @@ export default function StickyActions({ onAction, user }) {
 
       console.log('👉 STEP 3: Raw detailed activities:', detailedActivities);
 
+      // Deduplicate: filter out activities whose exact start time matches an existing log
+      const filteredActivities = [];
+      for (const act of detailedActivities) {
+        const startMs = act.timestamp.getTime();
+        if (existingStartTimes.has(startMs)) {
+          console.log(`Skipping duplicate activity at timestamp ${startMs}: ${act.item_name}`);
+          continue;
+        }
+        filteredActivities.push(act);
+      }
+
       // ── STEP 3a: Deduplicate + smart-merge close segments of the same type
-      const mergedActivities = processAndMergeActivities(detailedActivities);
+      const mergedActivities = processAndMergeActivities(filteredActivities);
       console.log('👉 STEP 3a: After dedup + merge:', mergedActivities);
 
       // Persist merged activities to React state
       setDetailedActivities(mergedActivities);
 
       if (mergedActivities.length === 0) {
-        alert('No activity segments recorded in the last 7 days. Log a workout in Google Fit first.');
+        alert('No new activity segments to sync.');
         setSyncing(false);
         return;
       }
@@ -406,6 +460,21 @@ export default function StickyActions({ onAction, user }) {
 
     } catch (error) {
       console.error('❌ Exception in handleSync:', error);
+      let handled = false;
+      try {
+        if (error && typeof error.text === 'function') {
+          const errorText = await error.text();
+          if (error.status === 400 && errorText.toLowerCase().includes('unknown datasource')) {
+            alert('No activity data found. Please ensure Google Fit is set up on your device and you have recorded at least one activity.');
+            handled = true;
+          }
+        }
+      } catch (e) {
+        console.error('Error reading response body in catch:', e);
+      }
+      if (!handled) {
+        alert('Could not reach Google Fit. Make sure you granted Fitness permissions at sign-in.');
+      }
     } finally {
       setSyncing(false);
     }
@@ -419,24 +488,24 @@ export default function StickyActions({ onAction, user }) {
         type="file"
         ref={groceryInputRef}
         accept="image/*"
-        onChange={handleGroceryFileChange}
+        onChange={handleGroceryAnalysis}
         className="hidden"
       />
 
       <button
-        id="scan-groceries-btn"
+        id="analyze-impact-btn"
         onClick={() => groceryInputRef.current.click()}
-        disabled={scanning}
-        aria-label="Scan grocery receipt to log food emissions"
+        disabled={analyzing}
+        aria-label="Analyze grocery receipt to log food emissions"
         className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white text-sm font-semibold rounded-full
           hover:bg-green-700 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
       >
-        {scanning ? (
+        {analyzing ? (
           <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" aria-hidden="true" />
         ) : (
           <span aria-hidden="true">📷</span>
         )}
-        {scanning ? 'Analyzing...' : 'Scan Groceries'}
+        {analyzing ? 'Analyzing image...' : 'Analyze Impact'}
       </button>
 
       <button

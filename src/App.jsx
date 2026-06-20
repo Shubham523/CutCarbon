@@ -55,7 +55,7 @@ export default function App() {
           description: data.description ??
             (data.items?.length
               ? `${data.items.length} grocery item${data.items.length > 1 ? 's' : ''}`
-              : 'Grocery scan'),
+              : 'Grocery analysis'),
 
           // Legacy `co2` field for components that haven't migrated yet
           co2: data.co2_score_kg ?? data.co2 ?? 0,

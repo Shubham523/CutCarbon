@@ -220,9 +220,11 @@ function MergedGroup({ group, onDelete, onEntryUpdate, userId }) {
           <span className="text-sm font-semibold text-gray-800 truncate">
             {group.date_string} &bull; {group.item_name}
           </span>
-          <span className="text-xs text-gray-400 shrink-0 tabular-nums">
-            {totalDurMin} min
-          </span>
+          {group.type !== 'grocery' && group.type !== 'scanned_product' && (
+            <span className="text-xs text-gray-400 shrink-0 tabular-nums">
+              {totalDurMin} min
+            </span>
+          )}
         </span>
 
         {/* Right: CO₂ badges — use localTotals for instant reflection */}
@@ -242,72 +244,108 @@ function MergedGroup({ group, onDelete, onEntryUpdate, userId }) {
 
       {/* Expanded body */}
       <div className="px-3 pb-3 bg-gray-50 border-t border-gray-100 text-sm text-gray-600">
-        <p className="pt-2 pb-1 text-xs font-medium text-gray-400 uppercase tracking-wide">
-          Merged from {totalChunks} session{totalChunks !== 1 ? 's' : ''}
-        </p>
+        {group.type === 'grocery' || group.type === 'scanned_product' ? (
+          <div className="pt-2">
+            {group.entries.map((entry, eIdx) => {
+              const d = resolveDate(entry.timestamp);
+              const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              const co2Val = entry.co2_score_kg ?? entry.co2 ?? 0;
 
-        {group.entries.map((entry, eIdx) => {
-          const blocks = entry.sub_blocks?.length ? entry.sub_blocks : [entry];
-          const isVehicle = entry.item_name === 'In Vehicle';
-
-          return (
-            <div key={entry.id ?? eIdx}>
-              {blocks.map((block, bIdx) => {
-                const d         = resolveDate(block.timestamp);
-                const timeStr   = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                const durMin    = Math.round((block.duration_ms ?? 0) / 60_000);
-                const prevented = block.co2_prevented_kg ?? 0;
-                const emitted   = block.co2_score_kg ?? block.co2 ?? 0;
-
-                return (
-                  <div
-                    key={bIdx}
-                    className="flex items-center justify-between py-1 border-b border-gray-100 last:border-0"
-                  >
+              return (
+                <div key={entry.id ?? eIdx} className="flex flex-col border-b border-gray-100 last:border-0 py-2">
+                  <div className="flex items-center justify-between">
                     <span className="tabular-nums text-gray-500 w-14 shrink-0">{timeStr}</span>
-                    <span className="flex-1 text-gray-700">
-                      {durMin > 0 ? `${durMin} min` : '< 1 min'}
+                    <span className="flex-1 text-gray-700 font-medium">
+                      {entry.item_name || 'Scanned Item'}
                     </span>
-
-                    {prevented > 0 && (
-                      <span className="text-green-600 tabular-nums text-xs mr-2">
-                        -{prevented.toFixed(2)} kg
-                      </span>
-                    )}
-                    {emitted > 0 && (
-                      <span className={`tabular-nums text-xs ${IMPACT(emitted)}`}>
-                        +{emitted.toFixed(2)} kg
-                      </span>
-                    )}
-                    {prevented === 0 && emitted === 0 && (
-                      <span className="text-green-600 text-xs">Carbon-free</span>
-                    )}
+                    <span className={`tabular-nums text-xs font-semibold ${IMPACT(co2Val)}`}>
+                      +{co2Val.toFixed(2)} kg
+                    </span>
                   </div>
-                );
-              })}
+                  {onDelete && entry.id && (
+                    <button
+                      onClick={() => onDelete(entry.id)}
+                      className="mt-1 self-start flex items-center gap-1 text-[10px] text-gray-300 hover:text-red-400 transition-colors"
+                      aria-label={`Delete ${entry.item_name} entry`}
+                    >
+                      <Trash2 size={10} />
+                      Remove
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div>
+            <p className="pt-2 pb-1 text-xs font-medium text-gray-400 uppercase tracking-wide">
+              Merged from {totalChunks} session{totalChunks !== 1 ? 's' : ''}
+            </p>
 
-              {/* Transit swap — persistent on all transport entries, not just 'In Vehicle' */}
-              {entry.type === 'transport' && (
-                <TransitSwap
-                  entry={entry}
-                  userId={userId}
-                  onUpdate={handleEntryUpdate}
-                />
-              )}
+            {group.entries.map((entry, eIdx) => {
+              const blocks = entry.sub_blocks?.length ? entry.sub_blocks : [entry];
+              const isVehicle = entry.item_name === 'In Vehicle';
 
-              {onDelete && entry.id && (
-                <button
-                  onClick={() => onDelete(entry.id)}
-                  className="mt-1 flex items-center gap-1 text-xs text-gray-300 hover:text-red-400 transition-colors"
-                  aria-label={`Delete ${group.item_name} entry`}
-                >
-                  <Trash2 size={11} />
-                  Remove
-                </button>
-              )}
-            </div>
-          );
-        })}
+              return (
+                <div key={entry.id ?? eIdx}>
+                  {blocks.map((block, bIdx) => {
+                    const d         = resolveDate(block.timestamp);
+                    const timeStr   = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const durMin    = Math.round((block.duration_ms ?? 0) / 60_000);
+                    const prevented = block.co2_prevented_kg ?? 0;
+                    const emitted   = block.co2_score_kg ?? block.co2 ?? 0;
+
+                    return (
+                      <div
+                        key={bIdx}
+                        className="flex items-center justify-between py-1 border-b border-gray-100 last:border-0"
+                      >
+                        <span className="tabular-nums text-gray-500 w-14 shrink-0">{timeStr}</span>
+                        <span className="flex-1 text-gray-700">
+                          {durMin > 0 ? `${durMin} min` : '< 1 min'}
+                        </span>
+
+                        {prevented > 0 && (
+                          <span className="text-green-600 tabular-nums text-xs mr-2">
+                            -{prevented.toFixed(2)} kg
+                          </span>
+                        )}
+                        {emitted > 0 && (
+                          <span className={`tabular-nums text-xs ${IMPACT(emitted)}`}>
+                            +{emitted.toFixed(2)} kg
+                          </span>
+                        )}
+                        {prevented === 0 && emitted === 0 && (
+                          <span className="text-green-600 text-xs">Carbon-free</span>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* Transit swap — persistent on all transport entries, not just 'In Vehicle' */}
+                  {entry.type === 'transport' && (
+                    <TransitSwap
+                      entry={entry}
+                      userId={userId}
+                      onUpdate={handleEntryUpdate}
+                    />
+                  )}
+
+                  {onDelete && entry.id && (
+                    <button
+                      onClick={() => onDelete(entry.id)}
+                      className="mt-1 flex items-center gap-1 text-xs text-gray-300 hover:text-red-400 transition-colors"
+                      aria-label={`Delete ${group.item_name} entry`}
+                    >
+                      <Trash2 size={11} />
+                      Remove
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </details>
   );
@@ -319,12 +357,16 @@ export default function ActivityFeed({ activities, onDelete, onEntryUpdate, user
   const merged      = processAndMergeActivities(
     activities.filter(a => a.type === 'fitness' || a.type === 'transport'),
   );
-  const groupedData = groupActivities(merged);
+  const groceryLogs = activities.filter(a => a.type === 'grocery' || a.type === 'scanned_product');
+  const groupedData = groupActivities([...merged, ...groceryLogs]);
 
   const groupedIds = new Set(
     Object.values(groupedData).flatMap(g => g.entries.map(e => e.id)),
   );
-  const ungrouped = activities.filter(a => !groupedIds.has(a.id));
+  const ungrouped = activities
+    .filter(a => !groupedIds.has(a.id))
+    .filter(a => a.type !== 'fitness' && a.type !== 'transport')
+    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
   const hasContent = activities.length > 0;
 
   return (

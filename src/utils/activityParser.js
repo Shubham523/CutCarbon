@@ -147,16 +147,23 @@ export function groupActivities(logs) {
   if (!logs?.length) return {};
 
   return logs.reduce((acc, log) => {
-    if (log.type !== 'fitness' && log.type !== 'transport') return acc;
+    if (log.type !== 'fitness' && log.type !== 'transport' && log.type !== 'grocery' && log.type !== 'scanned_product') return acc;
 
     const dateLabel = log.date_string
       ?? resolveDate(log.timestamp).toLocaleDateString('en-US', {
            weekday: 'long', month: 'short', day: 'numeric',
          });
-    // Use item_name ONLY as the grouping key — never fall through to description,
-    // which may contain human-readable strings like "Walking · 30 min" from the backend.
-    const actLabel  = log.item_name ?? 'Activity';
-    const groupKey  = `${dateLabel} — ${actLabel}`;
+
+    let actLabel;
+    let groupKey;
+
+    if (log.type === 'grocery' || log.type === 'scanned_product') {
+      actLabel = 'Scanned Items';
+      groupKey = `${dateLabel} - Scanned Items`;
+    } else {
+      actLabel = log.item_name ?? 'Activity';
+      groupKey = `${dateLabel} — ${actLabel}`;
+    }
 
     if (!acc[groupKey]) {
       acc[groupKey] = {
@@ -164,7 +171,7 @@ export function groupActivities(logs) {
         date_string:       dateLabel,
         item_name:         actLabel,
         type:              log.type,
-        icon:              log.icon ?? (log.type === 'transport' ? '🚗' : '🏃'),
+        icon:              log.icon ?? (log.type === 'transport' ? '🚗' : (log.type === 'grocery' || log.type === 'scanned_product') ? '🛒' : '🏃'),
         total_duration_ms: 0,
         total_prevented:   0,
         total_emitted:     0,
@@ -175,9 +182,7 @@ export function groupActivities(logs) {
     const g = acc[groupKey];
     g.total_duration_ms += (log.duration_ms ?? 0);
 
-    // STRICT routing by type — fitness saves emissions, transport emits them.
-    // Never add co2_score_kg to a fitness group or co2_prevented_kg to transport.
-    if (log.type === 'transport') {
+    if (log.type === 'transport' || log.type === 'grocery' || log.type === 'scanned_product') {
       g.total_emitted   += (log.co2_score_kg    ?? 0);
     } else if (log.type === 'fitness') {
       g.total_prevented += (log.co2_prevented_kg ?? 0);

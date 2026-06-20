@@ -1,0 +1,6 @@
+fastapi==0.138.0
+firebase_admin==7.4.0
+Pillow==12.2.0
+protobuf==7.35.1
+pydantic==2.13.4
+python-dotenv==1.2.2

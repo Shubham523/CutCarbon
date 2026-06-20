@@ -94,7 +94,7 @@ export default function InsightsView({ activities = [], settings = {} }) {
         <section aria-label="Weekly daily breakdown">
           <p className="text-xs text-gray-400 uppercase tracking-widest mb-4">Daily — this week</p>
           {activities.length === 0 ? (
-            <p className="text-sm text-gray-400 py-6">No scan data yet for this week.</p>
+            <p className="text-sm text-gray-400 py-6">No analysis data yet for this week.</p>
           ) : (
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={weeklyData} margin={{ top: 4, right: 0, left: -20, bottom: 0 }}>
@@ -122,7 +122,7 @@ export default function InsightsView({ activities = [], settings = {} }) {
         <section aria-label="Emissions by category">
           <p className="text-xs text-gray-400 uppercase tracking-widest mb-6">This week</p>
           {categoryData.length === 0 ? (
-            <p className="text-sm text-gray-400 py-6">No scan data yet — categories will appear here once you add scans.</p>
+            <p className="text-sm text-gray-400 py-6">No analysis data yet — categories will appear here once you add analysis.</p>
           ) : (
             <div className="space-y-5">
               {categoryData.map(({ category, current }) => {
