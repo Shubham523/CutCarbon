@@ -4,3 +4,4 @@ Pillow==12.2.0
 protobuf==7.35.1
 pydantic==2.13.4
 python-dotenv==1.2.2
+uvicorn==0.30.1

@@ -25,9 +25,9 @@ const IMPACT = co2 =>
 
 const MODES = [
   { value: 'carpool', label: 'Carpool 🚘' },
-  { value: 'bus',     label: 'Bus 🚌' },
-  { value: 'train',   label: 'Train 🚆' },
-  { value: 'metro',   label: 'Metro 🚇' },
+  { value: 'bus', label: 'Bus 🚌' },
+  { value: 'train', label: 'Train 🚆' },
+  { value: 'metro', label: 'Metro 🚇' },
 ];
 
 function modeLabel(mode, passengers) {
@@ -43,10 +43,10 @@ function modeLabel(mode, passengers) {
  */
 function TransitSwap({ entry, userId, onUpdate }) {
   // Pre-fill from existing Firestore values so re-edits show current state
-  const [open,       setOpen]       = useState(false);
-  const [mode,       setMode]       = useState(entry.transit_mode ?? 'bus');
-  const [passengers, setPassengers] = useState(entry.passengers   ?? 2);
-  const [saving,     setSaving]     = useState(false);
+  const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState(entry.transit_mode ?? 'bus');
+  const [passengers, setPassengers] = useState(entry.passengers ?? 2);
+  const [saving, setSaving] = useState(false);
 
   if (!entry.id || !userId) return null;
 
@@ -58,16 +58,16 @@ function TransitSwap({ entry, userId, onUpdate }) {
     try {
       // Always use the ORIGINAL duration_ms from the Firestore document —
       // never derive it from Date.now() or any computed value.
-      const impact   = calculateTransitImpact(entry.duration_ms ?? 0, mode, passengers);
+      const impact = calculateTransitImpact(entry.duration_ms ?? 0, mode, passengers);
       const newLabel = modeLabel(mode, passengers);
 
       const patch = {
-        transit_mode:     mode,
-        passengers:       mode === 'carpool' ? passengers : 1,
-        co2_score_kg:     impact.emitted_kg,
+        transit_mode: mode,
+        passengers: mode === 'carpool' ? passengers : 1,
+        co2_score_kg: impact.emitted_kg,
         co2_prevented_kg: impact.prevented_kg,
-        item_name:        newLabel,
-        description:      newLabel,
+        item_name: newLabel,
+        description: newLabel,
         // type stays 'transport' — greener trip, same category
       };
 
@@ -183,7 +183,7 @@ function TransitSwap({ entry, userId, onUpdate }) {
 function MergedGroup({ group, onDelete, onEntryUpdate, userId }) {
   // Local state mirrors the group's CO₂ totals so optimistic updates are instant.
   const [localTotals, setLocalTotals] = useState({
-    emitted:   group.total_emitted,
+    emitted: group.total_emitted,
     prevented: group.total_prevented,
   });
 
@@ -201,10 +201,10 @@ function MergedGroup({ group, onDelete, onEntryUpdate, userId }) {
     setLocalTotals(prev => {
       const entry = group.entries.find(e => e.id === id);
       if (!entry) return prev;
-      const oldEmitted   = entry.co2_score_kg ?? 0;
+      const oldEmitted = entry.co2_score_kg ?? 0;
       const oldPrevented = entry.co2_prevented_kg ?? 0;
       return {
-        emitted:   parseFloat(Math.max(0, prev.emitted   - oldEmitted   + patch.co2_score_kg).toFixed(2)),
+        emitted: parseFloat(Math.max(0, prev.emitted - oldEmitted + patch.co2_score_kg).toFixed(2)),
         prevented: parseFloat(Math.max(0, prev.prevented - oldPrevented + patch.co2_prevented_kg).toFixed(2)),
       };
     });
@@ -220,7 +220,7 @@ function MergedGroup({ group, onDelete, onEntryUpdate, userId }) {
           <span className="text-sm font-semibold text-gray-800 truncate">
             {group.date_string} &bull; {group.item_name}
           </span>
-          {group.type !== 'grocery' && group.type !== 'scanned_product' && (
+          {group.type !== 'grocery' && (
             <span className="text-xs text-gray-400 shrink-0 tabular-nums">
               {totalDurMin} min
             </span>
@@ -244,7 +244,7 @@ function MergedGroup({ group, onDelete, onEntryUpdate, userId }) {
 
       {/* Expanded body */}
       <div className="px-3 pb-3 bg-gray-50 border-t border-gray-100 text-sm text-gray-600">
-        {group.type === 'grocery' || group.type === 'scanned_product' ? (
+        {group.type === 'grocery' ? (
           <div className="pt-2">
             {group.entries.map((entry, eIdx) => {
               const d = resolveDate(entry.timestamp);
@@ -277,7 +277,7 @@ function MergedGroup({ group, onDelete, onEntryUpdate, userId }) {
             })}
           </div>
         ) : (
-          <div>
+          <>
             <p className="pt-2 pb-1 text-xs font-medium text-gray-400 uppercase tracking-wide">
               Merged from {totalChunks} session{totalChunks !== 1 ? 's' : ''}
             </p>
@@ -289,11 +289,11 @@ function MergedGroup({ group, onDelete, onEntryUpdate, userId }) {
               return (
                 <div key={entry.id ?? eIdx}>
                   {blocks.map((block, bIdx) => {
-                    const d         = resolveDate(block.timestamp);
-                    const timeStr   = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    const durMin    = Math.round((block.duration_ms ?? 0) / 60_000);
+                    const d = resolveDate(block.timestamp);
+                    const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const durMin = Math.round((block.duration_ms ?? 0) / 60_000);
                     const prevented = block.co2_prevented_kg ?? 0;
-                    const emitted   = block.co2_score_kg ?? block.co2 ?? 0;
+                    const emitted = block.co2_score_kg ?? block.co2 ?? 0;
 
                     return (
                       <div
@@ -344,7 +344,7 @@ function MergedGroup({ group, onDelete, onEntryUpdate, userId }) {
                 </div>
               );
             })}
-          </div>
+          </>
         )}
       </div>
     </details>
@@ -354,10 +354,10 @@ function MergedGroup({ group, onDelete, onEntryUpdate, userId }) {
 // ── ActivityFeed ──────────────────────────────────────────────────────────────
 
 export default function ActivityFeed({ activities, onDelete, onEntryUpdate, user }) {
-  const merged      = processAndMergeActivities(
+  const merged = processAndMergeActivities(
     activities.filter(a => a.type === 'fitness' || a.type === 'transport'),
   );
-  const groceryLogs = activities.filter(a => a.type === 'grocery' || a.type === 'scanned_product');
+  const groceryLogs = activities.filter(a => a.type === 'grocery');
   const groupedData = groupActivities([...merged, ...groceryLogs]);
 
   const groupedIds = new Set(
