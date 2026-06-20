@@ -1,38 +1,75 @@
-import { useState } from 'react';
-import { Bell, User, Sliders ,Shield} from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Bell, User, Sliders, Shield } from 'lucide-react';
 
-const SETTINGS_SECTIONS = [
-  {
-    id: 'profile',
-    title: 'Profile',
-    icon: User,
-    description: 'Your personal information and account details',
-  },
-  {
-    id: 'notifications',
-    title: 'Notifications',
-    icon: Bell,
-    description: 'Manage alerts, digests, and weekly summaries',
-  },
-  {
-    id: 'targets',
-    title: 'Emission Targets',
-    icon: Sliders,
-    description: 'Set your personal CO₂ reduction goals',
-  },
-  {
-    id: 'privacy',
-    title: 'Privacy & Data',
-    icon: Shield,
-    description: 'Control how your data is stored and used',
-  },
-];
+export default function SettingsView({ user, settings = {} }) {
+  const [dailyTarget,         setDailyTarget]         = useState(10);
+  const [weeklyDigest,        setWeeklyDigest]         = useState(true);
+  const [activityReminders,   setActivityReminders]    = useState(true);
+  const [publicProfile,       setPublicProfile]        = useState(false);
+  const [saveStatus,          setSaveStatus]           = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
 
-export default function SettingsView({ user }) {
-  const [dailyTarget, setDailyTarget] = useState(10);
-  const [weeklyDigest, setWeeklyDigest] = useState(true);
-  const [activityReminders, setActivityReminders] = useState(true);
-  const [publicProfile, setPublicProfile] = useState(false);
+  // Hydrate local form state whenever Firestore delivers fresh settings.
+  // Using individual setters avoids a render loop (no object identity churn).
+  useEffect(() => {
+    if (!settings || Object.keys(settings).length === 0) return;
+    if (settings.dailyTargetKg    !== undefined) setDailyTarget(settings.dailyTargetKg);
+    if (settings.weeklyDigest     !== undefined) setWeeklyDigest(settings.weeklyDigest);
+    if (settings.activityReminders !== undefined) setActivityReminders(settings.activityReminders);
+    if (settings.publicProfile    !== undefined) setPublicProfile(settings.publicProfile);
+  }, [settings]);
+
+  const handleSave = async () => {
+    if (!user) return;
+    setSaveStatus('saving');
+
+    try {
+      const res = await fetch('http://127.0.0.1:8000/api/settings', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.uid,
+          settings: {
+            dailyTargetKg:      dailyTarget,
+            weeklyDigest,
+            activityReminders,
+            publicProfile,
+          },
+        }),
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    } catch (err) {
+      console.error('Settings save failed:', err);
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 4000);
+    }
+  };
+
+  const TOGGLE_ITEMS = [
+    {
+      id:     'weekly-digest',
+      label:  'Weekly digest email',
+      desc:   'Receive a summary of your weekly emissions every Monday',
+      state:  weeklyDigest,
+      setter: setWeeklyDigest,
+    },
+    {
+      id:     'activity-reminders',
+      label:  'Activity log reminders',
+      desc:   'Get a daily nudge to log your activities at 8 PM',
+      state:  activityReminders,
+      setter: setActivityReminders,
+    },
+    {
+      id:     'public-profile',
+      label:  'Public leaderboard profile',
+      desc:   'Show your username on the community leaderboard',
+      state:  publicProfile,
+      setter: setPublicProfile,
+    },
+  ];
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -124,29 +161,7 @@ export default function SettingsView({ user }) {
           </h2>
         </div>
         <ul role="list" className="divide-y divide-gray-100">
-          {[
-            {
-              id: 'weekly-digest',
-              label: 'Weekly digest email',
-              desc: 'Receive a summary of your weekly emissions every Monday',
-              state: weeklyDigest,
-              setter: setWeeklyDigest,
-            },
-            {
-              id: 'activity-reminders',
-              label: 'Activity log reminders',
-              desc: 'Get a daily nudge to log your activities at 8 PM',
-              state: activityReminders,
-              setter: setActivityReminders,
-            },
-            {
-              id: 'public-profile',
-              label: 'Public leaderboard profile',
-              desc: 'Show your username on the community leaderboard',
-              state: publicProfile,
-              setter: setPublicProfile,
-            },
-          ].map(item => (
+          {TOGGLE_ITEMS.map(item => (
             <li key={item.id} className="flex items-center justify-between px-4 py-3">
               <div>
                 <p className="text-sm font-medium text-gray-800">{item.label}</p>
@@ -172,13 +187,26 @@ export default function SettingsView({ user }) {
       </section>
 
       {/* Save */}
-      <div className="flex justify-end">
+      <div className="flex items-center justify-end gap-3">
+        {saveStatus === 'saved' && (
+          <p className="text-sm text-green-600 font-medium" role="status" aria-live="polite">
+            ✓ Preferences saved
+          </p>
+        )}
+        {saveStatus === 'error' && (
+          <p className="text-sm text-red-500 font-medium" role="alert">
+            ✗ Save failed — check backend is running
+          </p>
+        )}
         <button
           id="settings-save-btn"
-          className="px-5 py-2 bg-green-700 text-white text-sm font-medium rounded-md hover:bg-green-800 transition-colors"
+          onClick={handleSave}
+          disabled={saveStatus === 'saving'}
+          className="px-5 py-2 bg-green-700 text-white text-sm font-medium rounded-md
+            hover:bg-green-800 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
           aria-label="Save settings"
         >
-          Save changes
+          {saveStatus === 'saving' ? 'Saving…' : 'Save changes'}
         </button>
       </div>
     </div>

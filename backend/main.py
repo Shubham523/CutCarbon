@@ -2,6 +2,8 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import Any, Dict
 from google import genai
 from PIL import Image
 import io
@@ -57,22 +59,31 @@ def sync_fitness(user_id: str, duration_min: float, activity_type: str):
 
     log_ref = db.collection("users").document(user_id).collection("logs").document()
     log_ref.set({
-        "type":         "fitness",
-        "activity":     activity_type,
-        "duration_min": duration_min,
-        "co2_saved_kg": co2_saved,
-        "rate_used":    rate,
-        "timestamp":    firestore.SERVER_TIMESTAMP,
+        "user_id":           user_id,
+        "type":              "fitness",
+        "activity":          activity_type,
+        "duration_min":      duration_min,
+        "co2_saved_kg":      co2_saved,
+        "co2_score_kg":      0.0,          # fitness never emits — only transport does
+        "co2_prevented_kg":  co2_saved,    # mirrors co2_saved_kg for frontend accumulator
+        "rate_used":         rate,
+        "category":          "Fitness",
+        "icon":              "🏃",
+        # item_name is the strict grouping key — NEVER include duration here
+        "item_name":         activity_type.replace('_', ' ').title(),
+        # description is the human-readable display string (not used for grouping)
+        "description":       f"{activity_type.replace('_', ' ').title()} · {round(duration_min, 1)} min",
+        "timestamp":         firestore.SERVER_TIMESTAMP,
     })
     print(f"🔥 Written to Firestore! Path is: users/{user_id}/logs/{log_ref.id}")
     print(f"   → {activity_type} for {duration_min} min → {co2_saved} kg CO₂ saved (rate: {rate} kg/min)")
 
     return {
-        "status":       "success",
+        "status":        "success",
         "activity_type": activity_type,
-        "duration_min": duration_min,
-        "co2_saved_kg": co2_saved,
-        "doc_id":       log_ref.id,
+        "duration_min":  duration_min,
+        "co2_saved_kg":  co2_saved,
+        "doc_id":        log_ref.id,
     }
 
 @app.post("/api/scan-groceries")
@@ -143,12 +154,16 @@ Return ONLY a raw JSON object matching this exact format with no extra text:
 
         print(f"   → Items: {detected_items} | CO₂: {co2_score_kg} kg")
 
-        # Write real AI-analysed data to Firestore
+        # Write real AI-analysed data to Firestore — subcollection under the user document
         log_ref = db.collection("users").document(user_id).collection("logs").document()
         log_ref.set({
+            "user_id":       user_id,
             "timestamp":     firestore.SERVER_TIMESTAMP,
-            "activity_type": "diet",
-            "item_summary":  ", ".join(detected_items),
+            "type":          "grocery",
+            "category":      "Groceries",
+            "icon":          "🛒",
+            "items":         detected_items,
+            "description":   f"{len(detected_items)} item{'s' if len(detected_items) != 1 else ''} scanned",
             "co2_score_kg":  co2_score_kg,
         })
         print(f"🔥 Written to Firestore! Path is: users/{user_id}/logs/{log_ref.id}")
@@ -162,4 +177,28 @@ Return ONLY a raw JSON object matching this exact format with no extra text:
     except Exception as e:
         print("--- DETAILED BACKEND CRASH LOG ---")
         print(str(e))
-        return {"status": "error", "message": f"Backend failed: {str(e)}"}
+        return {"status": "error", "message": f"Backend failed: {str(e)}"}
+
+
+# ---------------------------------------------------------------------------
+# Settings endpoint
+# ---------------------------------------------------------------------------
+
+class SettingsPayload(BaseModel):
+    user_id: str
+    settings: Dict[str, Any]
+
+
+@app.post("/api/settings")
+def save_settings(payload: SettingsPayload):
+    """Persist user preferences under users/{user_id} using merge so existing
+    fields (e.g. logs subcollection) are never overwritten."""
+    print(f"--- SETTINGS HIT! User ID: {payload.user_id} | Payload: {payload.settings} ---")
+
+    db.collection("users").document(payload.user_id).set(
+        {"settings": payload.settings},
+        merge=True,
+    )
+    print(f"🔥 Settings saved for user: {payload.user_id}")
+
+    return {"status": "success", "saved": payload.settings}

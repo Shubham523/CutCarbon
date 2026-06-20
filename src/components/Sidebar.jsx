@@ -15,7 +15,7 @@ export default function Sidebar({ activeView, onNavigate }) {
       {/* Brand */}
       <div className="flex items-center gap-2 px-5 py-5">
         <Leaf size={16} className="text-green-600" aria-hidden="true" />
-        <span className="text-sm font-semibold text-gray-900 tracking-tight">CFootprints</span>
+        <span className="text-sm font-semibold text-gray-900 tracking-tight">CutCarbon</span>
       </div>
 
       {/* Nav */}
