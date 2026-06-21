@@ -444,9 +444,16 @@ export default function StickyActions({ onAction, user }) {
         ([c, ms]) => ({ name: ACTIVITY_TYPES[c] ?? c, durMin: (ms / 60000).toFixed(1) }),
       ));
 
-      const url = `${API_BASE_URL}/api/sync-fitness?user_id=${user.uid}&duration_min=${durationMin}&activity_type=${mappedActivityStr}`;
-      console.log('👉 STEP 4.5: Firing backend request...', url);
-      const response = await fetch(`${API_BASE_URL}/api/sync-fitness?user_id=${user.uid}`, { method: 'POST' });
+      console.log('👉 STEP 4.5: Firing backend request...', { user_id: user.uid, duration_min: durationMin, activity_type: mappedActivityStr });
+      const response = await fetch(`${API_BASE_URL}/api/sync-fitness`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id:       user.uid,
+          duration_min:  durationMin,
+          activity_type: mappedActivityStr,
+        }),
+      });
       console.log('👉 STEP 4.6: Backend response status:', response.status);
 
       if (!response.ok) {

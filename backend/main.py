@@ -41,8 +41,16 @@ app.add_middleware(
 def read_root():
     return {"message": "API Gateway is running!"}
 
+class SyncFitnessRequest(BaseModel):
+    user_id: str
+    duration_min: float
+    activity_type: str
+
 @app.post("/api/sync-fitness")
-def sync_fitness(user_id: str, duration_min: float, activity_type: str):
+def sync_fitness(payload: SyncFitnessRequest):
+    user_id = payload.user_id
+    duration_min = payload.duration_min
+    activity_type = payload.activity_type
     print(f"--- BACKEND HIT! User ID: {user_id} | Activity: {activity_type} | Duration: {duration_min} min ---")
 
     # kg CO₂ saved per minute vs. equivalent car travel (avg car = ~0.021 kg CO₂/min at 60 km/h)
