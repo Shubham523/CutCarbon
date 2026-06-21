@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { signInWithPopup, onAuthStateChanged, signOut, GoogleAuthProvider } from "firebase/auth";
 import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc, Timestamp } from "firebase/firestore";
 import { auth, db, provider } from '../firebase';
 import Sidebar from './components/Sidebar';
 import TopAppBar from './components/TopAppBar';
-import Dashboard from './components/Dashboard';
-import InsightsView from './components/InsightsView';
-import SettingsView from './components/SettingsView';
+const Dashboard    = lazy(() => import('./components/Dashboard'));
+const InsightsView = lazy(() => import('./components/InsightsView'));
+const SettingsView = lazy(() => import('./components/SettingsView'));
 import StickyActions from './components/StickyActions';
 
 export default function App() {
@@ -179,11 +179,13 @@ export default function App() {
           className="flex-1 px-5 md:px-8 py-8 pb-28 overflow-auto"
           aria-label={`${activeView} view`}
         >
-          {activeView === 'dashboard' && (
-            <Dashboard activities={activities} onDelete={handleDelete} onEntryUpdate={handleEntryUpdate} user={user} settings={settings} />
-          )}
-          {activeView === 'insights'  && <InsightsView activities={activities} settings={settings} />}
-          {activeView === 'settings'  && <SettingsView user={user} settings={settings} />}
+          <Suspense fallback={<div className="text-center p-4">Loading...</div>}>
+            {activeView === 'dashboard' && (
+              <Dashboard activities={activities} onDelete={handleDelete} onEntryUpdate={handleEntryUpdate} user={user} settings={settings} />
+            )}
+            {activeView === 'insights'  && <InsightsView activities={activities} settings={settings} />}
+            {activeView === 'settings'  && <SettingsView user={user} settings={settings} />}
+          </Suspense>
         </main>
       </div>
 
