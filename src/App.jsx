@@ -1,10 +1,7 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
-import { signInWithPopup, onAuthStateChanged, signOut, GoogleAuthProvider } from "firebase/auth";
-import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc, Timestamp } from "firebase/firestore";
-import { auth, db, provider } from '../firebase';
 import Sidebar from './components/Sidebar';
 import TopAppBar from './components/TopAppBar';
-const Dashboard    = lazy(() => import('./components/Dashboard'));
+import Dashboard from './components/Dashboard';
 const InsightsView = lazy(() => import('./components/InsightsView'));
 const SettingsView = lazy(() => import('./components/SettingsView'));
 import StickyActions from './components/StickyActions';
@@ -15,67 +12,70 @@ export default function App() {
   const [activities, setActivities] = useState([]);
   const [settings, setSettings] = useState({});
   const [toast, setToast] = useState(null);
-  const [isAuthChecking, setIsAuthChecking] = useState(true);
 
-  // Listen for login status
+
+  // Defer Firebase initialisation: runs after the first paint so it does
+  // not block the Login screen from appearing immediately.
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setIsAuthChecking(false);
+    let unsubscribe = () => {};
+    // Both imports are cached by the module system after the first call
+    Promise.all([
+      import('../firebase'),
+      import('firebase/auth'),
+    ]).then(([{ auth }, { onAuthStateChanged }]) => {
+      unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+        setUser(currentUser);
+      });
     });
     return () => unsubscribe();
   }, []);
 
-  // Real-time Firestore listener — only runs when a user is signed in
+  // Real-time Firestore listener — deferred, only runs once a user is signed in
   useEffect(() => {
     if (!user) {
       setActivities([]);
       return;
     }
 
-    // Only fetch the last 7 days of data
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    let unsubscribe = () => {};
 
-    const q = query(
-      collection(db, 'users', user.uid, 'logs'),
-      where('timestamp', '>=', Timestamp.fromDate(oneWeekAgo)),
-      orderBy('timestamp', 'desc')
-    );
+    // Dynamic import keeps Firestore off the critical path
+    Promise.all([
+      import('../firebase'),
+      import('firebase/firestore'),
+    ]).then(([{ db }, { collection, query, where, orderBy, onSnapshot, Timestamp }]) => {
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const docs = snapshot.docs.map((docSnap) => {
-        const data = docSnap.data();
-        return {
-          // Spread all Firestore fields first so nothing is silently lost
-          ...data,
-          id: docSnap.id,
+      const q = query(
+        collection(db, 'users', user.uid, 'logs'),
+        where('timestamp', '>=', Timestamp.fromDate(oneWeekAgo)),
+        orderBy('timestamp', 'desc')
+      );
 
-          // Normalised display fields (override raw values where needed)
-          description: data.description ??
-            (data.items?.length
-              ? `${data.items.length} grocery item${data.items.length > 1 ? 's' : ''}`
-              : 'Grocery analysis'),
-
-          // Legacy `co2` field for components that haven't migrated yet
-          co2: data.co2_score_kg ?? data.co2 ?? 0,
-
-          category:  data.category  ?? 'Groceries',
-          icon:      data.icon      ?? '🛒',
-          // item_name is the strict grouping key — read only the dedicated field,
-          // never fall through to description which may contain duration strings.
-          item_name: data.item_name ?? null,
-
-          // Resolve Firestore Timestamp → ISO string for cross-component compatibility
-          timestamp: data.timestamp?.toDate?.().toISOString() ?? new Date().toISOString(),
-        };
+      unsubscribe = onSnapshot(q, (snapshot) => {
+        const docs = snapshot.docs.map((docSnap) => {
+          const data = docSnap.data();
+          return {
+            ...data,
+            id: docSnap.id,
+            description: data.description ??
+              (data.items?.length
+                ? `${data.items.length} grocery item${data.items.length > 1 ? 's' : ''}`
+                : 'Grocery analysis'),
+            co2: data.co2_score_kg ?? data.co2 ?? 0,
+            category:  data.category  ?? 'Groceries',
+            icon:      data.icon      ?? '🛒',
+            item_name: data.item_name ?? null,
+            timestamp: data.timestamp?.toDate?.().toISOString() ?? new Date().toISOString(),
+          };
+        });
+        setActivities(docs);
+      }, (error) => {
+        console.error('Firestore listener error:', error);
       });
-      setActivities(docs);
-    }, (error) => {
-      console.error('Firestore listener error:', error);
     });
 
-    // Cleanup: detach listener when user changes or component unmounts
     return () => unsubscribe();
   }, [user]);
 
@@ -86,13 +86,20 @@ export default function App() {
       return;
     }
 
-    const userDocRef = doc(db, 'users', user.uid);
-    const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
-      if (docSnap.exists() && docSnap.data().settings) {
-        setSettings(docSnap.data().settings);
-      }
-    }, (error) => {
-      console.error('User doc listener error:', error);
+    let unsubscribe = () => {};
+
+    Promise.all([
+      import('../firebase'),
+      import('firebase/firestore'),
+    ]).then(([{ db }, { doc, onSnapshot }]) => {
+      const userDocRef = doc(db, 'users', user.uid);
+      unsubscribe = onSnapshot(userDocRef, (docSnap) => {
+        if (docSnap.exists() && docSnap.data().settings) {
+          setSettings(docSnap.data().settings);
+        }
+      }, (error) => {
+        console.error('User doc listener error:', error);
+      });
     });
 
     return () => unsubscribe();
@@ -100,6 +107,8 @@ export default function App() {
 
   const handleLogin = async () => {
     try {
+      const { auth, provider } = await import('../firebase');
+      const { signInWithPopup, GoogleAuthProvider } = await import('firebase/auth');
       const result = await signInWithPopup(auth, provider);
       const credential = GoogleAuthProvider.credentialFromResult(result);
       const token = credential?.accessToken;
@@ -111,6 +120,8 @@ export default function App() {
 
   const handleLogout = async () => {
     try {
+      const { auth } = await import('../firebase');
+      const { signOut } = await import('firebase/auth');
       await signOut(auth);
       localStorage.removeItem("google_fit_token");
     } catch (error) {
@@ -118,8 +129,7 @@ export default function App() {
     }
   };
 
-  // If checking auth state, show a blank screen or spinner
-  if (isAuthChecking) return <div className="h-screen bg-white" />;
+  // Auth state is resolved asynchronously; no blocking blank-screen guard needed.
 
   // If not logged in, show the Login Screen
   if (!user) {
@@ -144,6 +154,8 @@ export default function App() {
 
   async function handleDelete(id) {
     try {
+      const { db } = await import('../firebase');
+      const { deleteDoc, doc } = await import('firebase/firestore');
       await deleteDoc(doc(db, 'users', user.uid, 'logs', id));
     } catch (error) {
       console.error('Delete failed:', error);
