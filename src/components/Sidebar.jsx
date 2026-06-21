@@ -38,6 +38,7 @@ export default function Sidebar({ activeView, onNavigate }) {
               id={`nav-${id}`}
               onClick={() => onNavigate(id)}
               aria-current={active ? "page" : undefined}
+              aria-label={`Navigate to ${label}`}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm text-left
                 ${active ? "font-semibold text-gray-900 bg-gray-100" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"}`}
             >

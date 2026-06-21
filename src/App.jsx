@@ -160,6 +160,7 @@ export default function App() {
         <p className="text-gray-600 mb-8">Track your footprint effortlessly.</p>
         <button
           onClick={handleLogin}
+          aria-label="Sign in with Google"
           className="w-full max-w-sm bg-gray-900 text-white py-4 rounded-full font-bold text-lg"
         >
           Sign in with Google

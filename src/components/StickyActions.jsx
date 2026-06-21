@@ -577,6 +577,7 @@ export default function StickyActions({ onAction, user }) {
         ref={groceryInputRef}
         accept="image/*"
         onChange={handleGroceryAnalysis}
+        aria-label="Upload receipt image for analysis"
         className="hidden"
       />
 

@@ -106,6 +106,7 @@ function TransitSwap({ entry, userId, onUpdate }) {
             setPassengers(entry.passengers ?? 2);
             setOpen(true);
           }}
+          aria-label={alreadyConverted ? `Edit Transit settings: ${modeLabel(entry.transit_mode, entry.passengers)}` : "Swap this trip to public transit or carpooling"}
           className="text-xs font-medium text-green-700 hover:text-green-900
             bg-green-50 hover:bg-green-100 border border-green-200 px-2 py-1
             rounded-full transition-colors"
@@ -193,6 +194,7 @@ function TransitSwap({ entry, userId, onUpdate }) {
               type="button"
               onClick={handleSave}
               disabled={saving}
+              aria-label={saving ? "Saving transit details" : "Save transit details update"}
               className="text-xs font-semibold px-3 py-1 bg-green-600 text-white
                 rounded-full hover:bg-green-700 disabled:opacity-60 transition-colors"
             >
@@ -201,6 +203,7 @@ function TransitSwap({ entry, userId, onUpdate }) {
             <button
               type="button"
               onClick={() => setOpen(false)}
+              aria-label="Cancel transit swap editing"
               className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1 transition-colors"
             >
               Cancel
@@ -324,7 +327,7 @@ function MergedGroup({ group, onDelete, onEntryUpdate, userId }) {
                       className="mt-1 self-start flex items-center gap-1 text-[10px] text-gray-300 hover:text-red-400 transition-colors"
                       aria-label={`Delete ${entry.item_name} entry`}
                     >
-                      <Trash2 size={10} />
+                      <Trash2 size={10} aria-hidden="true" />
                       Remove
                     </button>
                   )}
@@ -406,7 +409,7 @@ function MergedGroup({ group, onDelete, onEntryUpdate, userId }) {
                       className="mt-1 flex items-center gap-1 text-xs text-gray-300 hover:text-red-400 transition-colors"
                       aria-label={`Delete ${group.item_name} entry`}
                     >
-                      <Trash2 size={11} />
+                      <Trash2 size={11} aria-hidden="true" />
                       Remove
                     </button>
                   )}

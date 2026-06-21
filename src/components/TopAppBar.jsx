@@ -89,6 +89,7 @@ export default function TopAppBar({ activeView, onNavigate, onLogout }) {
                 setMobileOpen(false);
               }}
               aria-current={activeView === id ? "page" : undefined}
+              aria-label={`Navigate to ${label}`}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm text-left
                 ${activeView === id ? "font-semibold text-gray-900 bg-gray-100" : "text-gray-500"}`}
             >
@@ -100,6 +101,7 @@ export default function TopAppBar({ activeView, onNavigate, onLogout }) {
           <button
             id="logout-btn-mobile"
             onClick={onLogout}
+            aria-label="Sign out"
             className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm text-left
               text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
           >
