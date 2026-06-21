@@ -1,71 +1,34 @@
-# 🌍 CutCarbon — PromptWars Challenge 3
+# 🌍 CutCarbon
 
-### 🔗 Quick Links
 * **GitHub Repository:** [github.com/Shubham523/CFootprints](https://github.com/Shubham523/CFootprints)
 * **Live Deployment:** [cutcarbon.web.app](https://cutcarbon.web.app)
 * **LinkedIn Post:** [LinkedIn Showcase Post](https://www.linkedin.com/posts/shubham-523_promptwars-challenge-cutcarbon)
 
 ---
 
-## Problem Statement
-Design a solution that helps individuals understand, track, and reduce their carbon footprint through simple actions and personalized insights.
+## Chosen Vertical
+We chose the **Carbon Footprint Awareness** platform vertical. The objective is to design a solution that helps individuals understand, track, and reduce their carbon footprint through simple actions and personalized insights.
 
 ---
 
-## Solution Overview
-CutCarbon is an AI-powered environmental analytics dashboard designed to empower users to **track** their daily activity footprints, **reduce** their environmental impact through minor lifestyle adjustments, and actively shrink their global **carbon footprint**. 
-
-By feeding raw fitness data, transit modes, and scanned grocery receipt items into an intelligent pipeline, CutCarbon generates **personalized insights** and actionable target recommendations (e.g. comparing daily emissions against the global 1.5°C threshold of 7 kg CO₂/day).
-
----
-
-## Key Features
-* 🏃‍♂️ **Automated Fitness Sync**: Integrates with Google Fit data to calculate carbon offsets achieved by walking, running, or cycling compared to driving solo.
-* 🛒 **AI Grocery Scanner**: Leverages Gemini Vision API to analyze food items or receipt uploads and instantly calculates their embodied carbon footprint.
-* 🚗 **Interactive Transit Log**: Tracks motorized transport emissions and dynamically logs savings achieved when carpooling or using public transit.
-* 📊 **Dynamic Daily Analytics**: Real-time interactive progress bars and historical charts visualize targets versus actual emissions.
-* 🔒 **Security Hardened**: Protected via RFC 9116 compliant `security.txt`, search-engine safe `robots.txt`, secure client-side Firestore Rules, and automatic production console log stripping.
+## Approach and Logic
+Our approach is built on a highly optimized full-stack architecture combining a modern frontend, a lightweight backend, and state-of-the-art Generative AI:
+* **Vite & React**: A fast, client-side React 19 application built with Vite, utilizing dynamic environments and responsive Tailwind CSS layout cards.
+* **FastAPI**: A Python backend hosting API endpoints that handles data validations via Pydantic model schemas and enables secure cross-origin resource sharing (CORS).
+* **Gemini API**: Leverages the Google GenAI SDK (Gemini 2.5 Flash model) to parse unstructured data (such as grocery receipt photos or items lists) and perform automated carbon emissions calculations.
+* **Firebase**: Firebase Authentication provides secure, persistence-backed user session authentication, and Cloud Firestore acts as the real-time database storage engine.
 
 ---
 
-## Tech Stack
-* **Frontend**: React (v19), Vite (v6), Tailwind CSS
-* **Backend**: FastAPI (Python), Google GenAI SDK (Gemini 2.5 Flash)
-* **Database & Auth**: Cloud Firestore, Firebase Authentication
-* **Hosting**: Firebase Hosting (Frontend), Render (Backend)
+## How the Solution Works
+1. **Upload or Capture**: The user snaps a picture or uploads an image of a grocery receipt/food items through the interface.
+2. **AI Inference**: The frontend sends the image to the FastAPI server, which routes it through the Gemini 2.5 Vision pipeline.
+3. **Structured Extraction**: Gemini identifies each food item, extracts its weight/quantity, and evaluates the embodied CO₂ impact.
+4. **Calculations and Feedback**: The backend returns structured calculations to the client, which instantly renders the carbon footprint logs on the user's dashboard and updates their Net-Zero Balance scale in real-time.
 
 ---
 
-## Getting Started Locally
-
-### 1. Frontend Setup
-```bash
-# Clone the repository
-git clone https://github.com/Shubham523/CFootprints.git
-cd CFootprints
-
-# Install dependencies
-npm install
-
-# Setup environment variables
-cp .env.example .env.local
-
-# Run development server
-npm run dev
-```
-
-### 2. Backend Setup
-```bash
-cd backend
-python -m venv venv
-source venv/Scripts/activate  # On Windows
-
-# Install packages
-pip install -r requirements.txt
-
-# Setup environment variables
-cp .env.example .env
-
-# Run FastAPI server
-uvicorn main:app --reload
-```
+## Any Assumptions Made
+* **Stable Connection**: The user has a stable internet connection to communicate with the FastAPI backend and allow the Gemini AI API to return inference results.
+* **Valid Receipts**: Uploaded files contain reasonably legible images of food items or receipts for the vision model to accurately parse carbon footprints.
+* **Authentication Integrity**: The Firestore Security Rules and Client SDK rely on Google/Firebase Auth to validate current user sessions securely.
