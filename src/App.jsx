@@ -1,8 +1,8 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense, useCallback } from "react";
 import Sidebar from "./components/Sidebar";
 import TopAppBar from "./components/TopAppBar";
-import Dashboard from "./components/Dashboard";
 import LoginScreen from "./components/LoginScreen";
+const Dashboard = lazy(() => import("./components/Dashboard"));
 const InsightsView = lazy(() => import("./components/InsightsView"));
 const SettingsView = lazy(() => import("./components/SettingsView"));
 import StickyActions from "./components/StickyActions";
@@ -123,7 +123,7 @@ export default function App() {
   /**
    * Triggers the Google Sign-In pop-up flow using Firebase Authentication.
    */
-  const handleLogin = async () => {
+  const handleLogin = useCallback(async () => {
     try {
       const { auth, provider } = await import("../firebase");
       const { signInWithPopup, GoogleAuthProvider } =
@@ -135,12 +135,12 @@ export default function App() {
     } catch (error) {
       console.error("Login failed:", error);
     }
-  };
+  }, []);
 
   /**
    * Triggers the Sign-Out flow using Firebase Authentication and cleans tokens.
    */
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     try {
       const { auth } = await import("../firebase");
       const { signOut } = await import("firebase/auth");
@@ -149,7 +149,7 @@ export default function App() {
     } catch (error) {
       console.error("Logout failed:", error);
     }
-  };
+  }, []);
 
   // Auth state is resolved asynchronously; no blocking blank-screen guard needed.
 
@@ -163,26 +163,29 @@ export default function App() {
    *
    * @param {string} msg - The text to display in the toast notification.
    */
-  function showToast(msg) {
+  const showToast = useCallback((msg) => {
     setToast(msg);
     setTimeout(() => setToast(null), 3000);
-  }
+  }, []);
 
   /**
    * Deletes a log entry from Firestore.
    *
    * @param {string} id - The Firestore document identifier for the log.
    */
-  async function handleDelete(id) {
-    try {
-      const { db } = await import("../firebase");
-      const { deleteDoc, doc } = await import("firebase/firestore");
-      await deleteDoc(doc(db, "users", user.uid, "logs", id));
-    } catch (error) {
-      console.error("Delete failed:", error);
-      showToast("Could not delete — please try again.");
-    }
-  }
+  const handleDelete = useCallback(
+    async (id) => {
+      try {
+        const { db } = await import("../firebase");
+        const { deleteDoc, doc } = await import("firebase/firestore");
+        await deleteDoc(doc(db, "users", user.uid, "logs", id));
+      } catch (error) {
+        console.error("Delete failed:", error);
+        showToast("Could not delete — please try again.");
+      }
+    },
+    [user.uid, showToast],
+  );
 
   // Optimistic patch: update a single activity in local state immediately
   // after a TransitSwap Firestore write, before onSnapshot fires.
@@ -192,7 +195,7 @@ export default function App() {
    * @param {string} id - The document ID of the activity log.
    * @param {Object} patch - The values to merge into the activity object.
    */
-  function handleEntryUpdate(id, patch) {
+  const handleEntryUpdate = useCallback((id, patch) => {
     setActivities((prev) =>
       prev.map((a) =>
         a.id === id
@@ -205,7 +208,7 @@ export default function App() {
           : a,
       ),
     );
-  }
+  }, []);
   return (
     <div className="min-h-screen bg-white flex">
       <Sidebar activeView={activeView} onNavigate={setActiveView} />

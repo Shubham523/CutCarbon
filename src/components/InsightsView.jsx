@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import PropTypes from "prop-types";
 import WeeklyEmissionsTab from "./WeeklyEmissionsTab";
 import CategoryEmissionsTab from "./CategoryEmissionsTab";
@@ -58,9 +58,18 @@ export default function InsightsView({ activities = [], settings = {} }) {
   const [tab, setTab] = useState("Weekly");
   const dailyTarget = settings.dailyTargetKg ?? 10;
 
-  const weeklyData = buildWeeklyData(activities, dailyTarget);
-  const categoryData = buildCategoryData(activities);
-  const maxCo2 = Math.max(...categoryData.map((c) => c.current), 1);
+  const weeklyData = useMemo(
+    () => buildWeeklyData(activities, dailyTarget),
+    [activities, dailyTarget],
+  );
+  const categoryData = useMemo(
+    () => buildCategoryData(activities),
+    [activities],
+  );
+  const maxCo2 = useMemo(
+    () => Math.max(...categoryData.map((c) => c.current), 1),
+    [categoryData],
+  );
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">

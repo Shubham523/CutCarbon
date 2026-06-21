@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import StatsRow from "./StatsRow";
 import ActivityFeed from "./ActivityFeed";
 import WeeklyChart from "./WeeklyChart";
@@ -24,9 +25,13 @@ export default function Dashboard({
 }) {
   const dailyTarget = settings.dailyTargetKg ?? 10;
   const weeklyTarget = dailyTarget * 7;
-  const total = activities.reduce(
-    (s, a) => s + (a.co2 ?? a.co2_score_kg ?? 0),
-    0,
+  const total = useMemo(
+    () =>
+      activities.reduce(
+        (s, a) => s + (a.co2 ?? a.co2_score_kg ?? 0),
+        0,
+      ),
+    [activities],
   );
 
   return (
