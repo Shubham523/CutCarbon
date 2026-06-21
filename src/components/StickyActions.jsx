@@ -1,39 +1,49 @@
-import { useState, useRef } from 'react';
-import { collection, addDoc, serverTimestamp, Timestamp, getDocs, query, where, writeBatch, doc } from 'firebase/firestore';
-import { db } from '../../firebase';
-import { processAndMergeActivities } from '../utils/activityParser';
+import { useState, useRef } from "react";
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
+  Timestamp,
+  getDocs,
+  query,
+  where,
+  writeBatch,
+  doc,
+} from "firebase/firestore";
+import { db } from "../../firebase";
+import { processAndMergeActivities } from "../utils/activityParser";
 
 // ── Activity code → human-readable label ─────────────────────────────────────
 const ACTIVITY_TYPES = {
-  0: 'In Vehicle',
-  1: 'Biking',
-  2: 'On Foot',
-  3: 'Still',
-  4: 'Unknown',
-  7: 'Walking',
-  8: 'Running',
-  9: 'Aerobics',
-  16: 'Road Biking',
-  17: 'Spinning',
-  58: 'Treadmill',
-  72: 'Sleeping',
-  89: 'Walking (Treadmill)',
+  0: "In Vehicle",
+  1: "Biking",
+  2: "On Foot",
+  3: "Still",
+  4: "Unknown",
+  7: "Walking",
+  8: "Running",
+  9: "Aerobics",
+  16: "Road Biking",
+  17: "Spinning",
+  58: "Treadmill",
+  72: "Sleeping",
+  89: "Walking (Treadmill)",
 };
 
 // ── Activity code → Python backend string ─────────────────────────────────────
 const BACKEND_MAP = {
-  1: 'cycling',
-  2: 'walking',           // On Foot
-  7: 'walking',
-  8: 'running',
-  9: 'running',           // Aerobics
-  10: 'hiking',
-  15: 'swimming',
-  16: 'cycling',           // Road Biking
-  17: 'strength_training', // Spinning
-  58: 'running',           // Treadmill
-  72: 'sleep',
-  89: 'walking',           // Walking (Treadmill)
+  1: "cycling",
+  2: "walking", // On Foot
+  7: "walking",
+  8: "running",
+  9: "running", // Aerobics
+  10: "hiking",
+  15: "swimming",
+  16: "cycling", // Road Biking
+  17: "strength_training", // Spinning
+  58: "running", // Treadmill
+  72: "sleep",
+  89: "walking", // Walking (Treadmill)
 };
 
 // ── Emission constants ────────────────────────────────────────────────────────
@@ -122,7 +132,6 @@ const getTransitPreventedCO2 = (mode, durationMs) => {
   return parseFloat((distanceKm * saving).toFixed(2));
 };
 
-
 /**
  * Unified transit impact calculator.
  *
@@ -137,13 +146,17 @@ const getTransitPreventedCO2 = (mode, durationMs) => {
  * @param {number} passengers  — relevant only for mode === 'carpool' (min 1)
  * @returns {{ emitted_kg: number, prevented_kg: number }}
  */
-const calculateTransitImpact = (durationMs, mode = 'solo_car', passengers = 1) => {
+const calculateTransitImpact = (
+  durationMs,
+  mode = "solo_car",
+  passengers = 1,
+) => {
   const distanceKm = (durationMs / (1000 * 60 * 60)) * AVG_SPEED_KMH;
   const baselineEmission = distanceKm * TRANSIT_EMISSIONS.solo_car;
 
   let actualEmission;
 
-  if (mode === 'carpool') {
+  if (mode === "carpool") {
     // Divide the full car emission by headcount — works for any party size
     actualEmission = baselineEmission / Math.max(1, passengers);
   } else if (TRANSIT_EMISSIONS[mode] !== undefined) {
@@ -162,9 +175,7 @@ const calculateTransitImpact = (durationMs, mode = 'solo_car', passengers = 1) =
   };
 };
 
-
 // processAndMergeActivities is imported from src/utils/activityParser.js
-
 
 export default function StickyActions({ onAction, user }) {
   const API_BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
@@ -179,25 +190,28 @@ export default function StickyActions({ onAction, user }) {
     const file = e.target.files[0];
     if (!file || !user) return;
 
-    console.log('Uploading grocery image:', file.name);
+    console.log("Uploading grocery image:", file.name);
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append("file", file);
 
     setAnalyzing(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/process-grocery?user_id=${user.uid}`, {
-        method: 'POST',
-        body: formData,
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/api/process-grocery?user_id=${user.uid}`,
+        {
+          method: "POST",
+          body: formData,
+        },
+      );
       if (!response.ok) {
         throw new Error(`API returned status ${response.status}`);
       }
       const data = await response.json();
-      console.log('Grocery processing response:', data);
+      console.log("Grocery processing response:", data);
 
       const items = Array.isArray(data.items) ? data.items : [];
       if (items.length === 0) {
-        alert('Analysis completed, but no items were detected.');
+        alert("Analysis completed, but no items were detected.");
         return;
       }
 
@@ -213,57 +227,65 @@ export default function StickyActions({ onAction, user }) {
           icon: "🛒",
           item_name: item.detected_name || "Scanned Item",
           description: item.detected_name || "Scanned Item",
-          co2_score_kg: typeof item.co2_score_kg === 'number' ? item.co2_score_kg : 0,
+          co2_score_kg:
+            typeof item.co2_score_kg === "number" ? item.co2_score_kg : 0,
         });
       });
       await batch.commit();
-      console.log(`🔥 Written ${items.length} item(s) to Firestore from frontend!`);
+      console.log(
+        `🔥 Written ${items.length} item(s) to Firestore from frontend!`,
+      );
 
       alert(`${items.length} items analyzed and added!`);
       onAction(`🛒 ${items.length} items analyzed and added!`);
     } catch (error) {
-      console.error('Grocery upload error:', error);
-      alert('Failed to analyze image. Please try again.');
+      console.error("Grocery upload error:", error);
+      alert("Failed to analyze image. Please try again.");
     } finally {
       setAnalyzing(false);
-      e.target.value = ''; // allow re-selecting the same file
+      e.target.value = ""; // allow re-selecting the same file
     }
   };
 
   // ── Google Fit sync handler ────────────────────────────────────────────────
   const handleSync = async () => {
-    console.log('--- Sync Button Clicked! ---');
-    console.log('Current user prop value:', user);
+    console.log("--- Sync Button Clicked! ---");
+    console.log("Current user prop value:", user);
 
     if (!user) {
-      alert('Frontend Blocked: User object is null or undefined!');
-      console.error('handleSync: no authenticated user — aborting fetch.');
+      alert("Frontend Blocked: User object is null or undefined!");
+      console.error("handleSync: no authenticated user — aborting fetch.");
       return;
     }
 
-    const token = localStorage.getItem('google_fit_token');
+    const token = localStorage.getItem("google_fit_token");
     if (!token) {
-      console.error('Token missing — user may not have granted Fitness permissions.');
+      console.error(
+        "Token missing — user may not have granted Fitness permissions.",
+      );
     }
 
     setSyncing(true);
     try {
       // ── STEP 1: Build 7-day time window ──────────────────────────────────
       const endTimeMs = new Date().getTime();
-      const startTimeMs = endTimeMs - (7 * 24 * 60 * 60 * 1000);
-      console.log('👉 STEP 1: Querying Google Fit for last 7 days...', { startTimeMs, endTimeMs });
+      const startTimeMs = endTimeMs - 7 * 24 * 60 * 60 * 1000;
+      console.log("👉 STEP 1: Querying Google Fit for last 7 days...", {
+        startTimeMs,
+        endTimeMs,
+      });
 
       // ── STEP 2: Fetch activity segments (one bucket = one workout) ────────
       const aggregateRes = await fetch(
-        'https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate',
+        "https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate",
         {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            aggregateBy: [{ dataTypeName: 'com.google.activity.segment' }],
+            aggregateBy: [{ dataTypeName: "com.google.activity.segment" }],
             bucketByActivitySegment: {
               minDurationMillis: 60000, // ignore segments shorter than 1 minute
             },
@@ -278,12 +300,12 @@ export default function StickyActions({ onAction, user }) {
       }
 
       const aggregateData = await aggregateRes.json();
-      console.log('👉 STEP 2: Raw aggregate payload:', aggregateData);
+      console.log("👉 STEP 2: Raw aggregate payload:", aggregateData);
 
       // ── STEP 2.5: Fetch existing logs from Firestore to deduplicate ────────
       const q = query(
-        collection(db, 'users', user.uid, 'logs'),
-        where('type', 'in', ['fitness', 'transport'])
+        collection(db, "users", user.uid, "logs"),
+        where("type", "in", ["fitness", "transport"]),
       );
       const querySnapshot = await getDocs(q);
       const existingStartTimes = new Set();
@@ -302,45 +324,64 @@ export default function StickyActions({ onAction, user }) {
       // bucket.activity.activityType for bucketByActivitySegment responses).
       // STRICT RULE: only drop null, Still (3), Unknown (4), and Sleeping (72).
       // In Vehicle (0), Biking (1), Walking (7), Running (8), etc. all pass through.
-      const detailedActivities = (aggregateData.bucket ?? []).map((b) => {
-        let activityCode = null;
+      const detailedActivities = (aggregateData.bucket ?? [])
+        .map((b) => {
+          let activityCode = null;
 
-        b.dataset.forEach((ds) => {
-          if (ds.point && ds.point.length > 0 && ds.point[0].value.length >= 2) {
-            activityCode = ds.point[0].value[0].intVal;
+          b.dataset.forEach((ds) => {
+            if (
+              ds.point &&
+              ds.point.length > 0 &&
+              ds.point[0].value.length >= 2
+            ) {
+              activityCode = ds.point[0].value[0].intVal;
+            }
+          });
+
+          // STRICT filter — only exclude these three passive/ambiguous codes
+          if (
+            activityCode === null ||
+            activityCode === 3 ||
+            activityCode === 4 ||
+            activityCode === 72
+          ) {
+            return null;
           }
-        });
 
-        // STRICT filter — only exclude these three passive/ambiguous codes
-        if (activityCode === null || activityCode === 3 || activityCode === 4 || activityCode === 72) {
-          return null;
-        }
+          const start = new Date(parseInt(b.startTimeMillis));
+          const durationMs =
+            parseInt(b.endTimeMillis) - parseInt(b.startTimeMillis);
 
-        const start = new Date(parseInt(b.startTimeMillis));
-        const durationMs = parseInt(b.endTimeMillis) - parseInt(b.startTimeMillis);
+          if (durationMs < 60000) return null; // ignore segments under 1 minute
 
-        if (durationMs < 60000) return null; // ignore segments under 1 minute
+          return {
+            type: activityCode === 0 ? "transport" : "fitness",
+            item_name:
+              ACTIVITY_TYPES[activityCode] ?? `Activity Code ${activityCode}`,
+            co2_score_kg: getEstimatedCO2(activityCode, durationMs),
+            co2_prevented_kg: getPreventedCO2(activityCode, durationMs),
+            duration_ms: durationMs,
+            timestamp: start, // EXACT activity start time — not Date.now()
+            date_string: start.toLocaleDateString("en-US", {
+              weekday: "long",
+              month: "short",
+              day: "numeric",
+            }),
+            activityCode, // keep raw code for downstream routing
+          };
+        })
+        .filter(Boolean);
 
-        return {
-          type: activityCode === 0 ? 'transport' : 'fitness',
-          item_name: ACTIVITY_TYPES[activityCode] ?? `Activity Code ${activityCode}`,
-          co2_score_kg: getEstimatedCO2(activityCode, durationMs),
-          co2_prevented_kg: getPreventedCO2(activityCode, durationMs),
-          duration_ms: durationMs,
-          timestamp: start, // EXACT activity start time — not Date.now()
-          date_string: start.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }),
-          activityCode, // keep raw code for downstream routing
-        };
-      }).filter(Boolean);
-
-      console.log('👉 STEP 3: Raw detailed activities:', detailedActivities);
+      console.log("👉 STEP 3: Raw detailed activities:", detailedActivities);
 
       // Deduplicate: filter out activities whose exact start time matches an existing log
       const filteredActivities = [];
       for (const act of detailedActivities) {
         const startMs = act.timestamp.getTime();
         if (existingStartTimes.has(startMs)) {
-          console.log(`Skipping duplicate activity at timestamp ${startMs}: ${act.item_name}`);
+          console.log(
+            `Skipping duplicate activity at timestamp ${startMs}: ${act.item_name}`,
+          );
           continue;
         }
         filteredActivities.push(act);
@@ -348,20 +389,24 @@ export default function StickyActions({ onAction, user }) {
 
       // ── STEP 3a: Deduplicate + smart-merge close segments of the same type
       const mergedActivities = processAndMergeActivities(filteredActivities);
-      console.log('👉 STEP 3a: After dedup + merge:', mergedActivities);
+      console.log("👉 STEP 3a: After dedup + merge:", mergedActivities);
 
       // Persist merged activities to React state
       setDetailedActivities(mergedActivities);
 
       if (mergedActivities.length === 0) {
-        alert('No new activity segments to sync.');
+        alert("No new activity segments to sync.");
         setSyncing(false);
         return;
       }
 
       // ── STEP 3.5: Route — transport → Firestore, fitness → Firestore + backend
-      const transportSegments = mergedActivities.filter((a) => a.type === 'transport');
-      const fitnessSegments = mergedActivities.filter((a) => a.type === 'fitness');
+      const transportSegments = mergedActivities.filter(
+        (a) => a.type === "transport",
+      );
+      const fitnessSegments = mergedActivities.filter(
+        (a) => a.type === "fitness",
+      );
 
       /**
        * Normalises a detailedActivities entry into the exact Firestore document
@@ -370,62 +415,79 @@ export default function StickyActions({ onAction, user }) {
        */
       const toFirestoreDoc = (a) => ({
         user_id: user.uid,
-        type: a.type,             // 'transport' | 'fitness'
-        category: a.type === 'transport' ? 'Transport' : 'Fitness',
-        icon: a.type === 'transport' ? '🚗' : '🏃',
+        type: a.type, // 'transport' | 'fitness'
+        category: a.type === "transport" ? "Transport" : "Fitness",
+        icon: a.type === "transport" ? "🚗" : "🏃",
         // Store BOTH description (display) and item_name (grouping key) explicitly.
         description: a.item_name,
-        item_name: a.item_name,        // strict ACTIVITY_TYPES string e.g. "Walking"
-        co2_score_kg: a.co2_score_kg,     // 0 for fitness, >0 for transport
+        item_name: a.item_name, // strict ACTIVITY_TYPES string e.g. "Walking"
+        co2_score_kg: a.co2_score_kg, // 0 for fitness, >0 for transport
         co2_prevented_kg: a.co2_prevented_kg, // >0 for active travel, 0 for transport
         duration_ms: a.duration_ms,
-        date_string: a.date_string,      // e.g. 'Monday, Jun 17'
+        date_string: a.date_string, // e.g. 'Monday, Jun 17'
         // EXACT activity start time from Google Fit startTimeMillis.
         // Timestamp.fromDate preserves the historical date — DO NOT use serverTimestamp().
         timestamp: Timestamp.fromDate(a.timestamp),
       });
 
-
       // Write transport logs to Firestore
       if (transportSegments.length > 0) {
         const transportWrites = transportSegments.map((a) =>
-          addDoc(collection(db, 'users', user.uid, 'logs'), toFirestoreDoc(a))
-            .then((ref) => {
-              console.log(`   🔥 Transport logged: ${a.co2_score_kg} kg CO₂ → logs/${ref.id}`);
-              return a.co2_score_kg;
-            }),
+          addDoc(
+            collection(db, "users", user.uid, "logs"),
+            toFirestoreDoc(a),
+          ).then((ref) => {
+            console.log(
+              `   🔥 Transport logged: ${a.co2_score_kg} kg CO₂ → logs/${ref.id}`,
+            );
+            return a.co2_score_kg;
+          }),
         );
 
         const co2Values = await Promise.all(transportWrites);
-        const totalTransportCO2 = co2Values.reduce((s, v) => s + v, 0).toFixed(2);
-        console.log(`👉 STEP 3.6: ${transportSegments.length} transport log(s) written — ${totalTransportCO2} kg CO₂`);
-        onAction(`🚗 ${transportSegments.length} car trip${transportSegments.length > 1 ? 's' : ''} logged — ${totalTransportCO2} kg CO₂`);
+        const totalTransportCO2 = co2Values
+          .reduce((s, v) => s + v, 0)
+          .toFixed(2);
+        console.log(
+          `👉 STEP 3.6: ${transportSegments.length} transport log(s) written — ${totalTransportCO2} kg CO₂`,
+        );
+        onAction(
+          `🚗 ${transportSegments.length} car trip${transportSegments.length > 1 ? "s" : ""} logged — ${totalTransportCO2} kg CO₂`,
+        );
       }
 
       // Write fitness logs to Firestore (before backend call so data is always persisted
       // even if the CO₂ calculation endpoint is temporarily unavailable)
       if (fitnessSegments.length > 0) {
         const fitnessWrites = fitnessSegments.map((a) =>
-          addDoc(collection(db, 'users', user.uid, 'logs'), toFirestoreDoc(a))
-            .then((ref) => {
-              console.log(`   🔥 Fitness logged: ${a.item_name}, ${(a.duration_ms / 60000).toFixed(1)} min → logs/${ref.id}`);
-            }),
+          addDoc(
+            collection(db, "users", user.uid, "logs"),
+            toFirestoreDoc(a),
+          ).then((ref) => {
+            console.log(
+              `   🔥 Fitness logged: ${a.item_name}, ${(a.duration_ms / 60000).toFixed(1)} min → logs/${ref.id}`,
+            );
+          }),
         );
         await Promise.all(fitnessWrites);
-        console.log(`👉 STEP 3.7: ${fitnessSegments.length} fitness segment(s) written to Firestore`);
+        console.log(
+          `👉 STEP 3.7: ${fitnessSegments.length} fitness segment(s) written to Firestore`,
+        );
       }
 
       // Accumulate fitness durations per activity type for the backend call
       const activityDurations = {};
       for (const a of fitnessSegments) {
-        activityDurations[a.activityCode] = (activityDurations[a.activityCode] ?? 0) + a.duration_ms;
+        activityDurations[a.activityCode] =
+          (activityDurations[a.activityCode] ?? 0) + a.duration_ms;
       }
 
-      console.log('👉 STEP 3.7: Fitness durations (ms):', activityDurations);
+      console.log("👉 STEP 3.7: Fitness durations (ms):", activityDurations);
 
       // ── STEP 4: Forward dominant fitness activity to Python backend ───────
-      const dominantEntry = Object.entries(activityDurations)
-        .sort(([, a], [, b]) => b - a)[0];
+      const dominantEntry = Object.entries(activityDurations).sort(
+        ([, a], [, b]) => b - a,
+      )[0];
 
       if (!dominantEntry) {
         // Transport-only sync — no fitness backend call needed, already done above.
@@ -435,26 +497,36 @@ export default function StickyActions({ onAction, user }) {
 
       const [dominantType, totalDurMs] = dominantEntry;
       const dominantCode = Number(dominantType);
-      const mappedActivityStr = BACKEND_MAP[dominantCode] ?? 'unknown';
-      const activityLabel = ACTIVITY_TYPES[dominantCode] ?? 'Other Activity';
+      const mappedActivityStr = BACKEND_MAP[dominantCode] ?? "unknown";
+      const activityLabel = ACTIVITY_TYPES[dominantCode] ?? "Other Activity";
       const durationMin = parseFloat((totalDurMs / 60000).toFixed(2));
 
-      console.log(`👉 STEP 4: Dominant="${activityLabel}" (code ${dominantCode}) → backend="${mappedActivityStr}", ${durationMin} min`);
-      console.log('👉 STEP 4 (all segments):', Object.entries(activityDurations).map(
-        ([c, ms]) => ({ name: ACTIVITY_TYPES[c] ?? c, durMin: (ms / 60000).toFixed(1) }),
-      ));
+      console.log(
+        `👉 STEP 4: Dominant="${activityLabel}" (code ${dominantCode}) → backend="${mappedActivityStr}", ${durationMin} min`,
+      );
+      console.log(
+        "👉 STEP 4 (all segments):",
+        Object.entries(activityDurations).map(([c, ms]) => ({
+          name: ACTIVITY_TYPES[c] ?? c,
+          durMin: (ms / 60000).toFixed(1),
+        })),
+      );
 
-      console.log('👉 STEP 4.5: Firing backend request...', { user_id: user.uid, duration_min: durationMin, activity_type: mappedActivityStr });
+      console.log("👉 STEP 4.5: Firing backend request...", {
+        user_id: user.uid,
+        duration_min: durationMin,
+        activity_type: mappedActivityStr,
+      });
       const response = await fetch(`${API_BASE_URL}/api/sync-fitness`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          user_id:       user.uid,
-          duration_min:  durationMin,
+          user_id: user.uid,
+          duration_min: durationMin,
           activity_type: mappedActivityStr,
         }),
       });
-      console.log('👉 STEP 4.6: Backend response status:', response.status);
+      console.log("👉 STEP 4.6: Backend response status:", response.status);
 
       if (!response.ok) {
         const errBody = await response.json().catch(() => ({}));
@@ -463,25 +535,33 @@ export default function StickyActions({ onAction, user }) {
       }
 
       const data = await response.json();
-      console.log('👉 STEP 5: Received payload from Python:', data);
-      onAction(`✅ Fitness synced — ${durationMin} min ${activityLabel} · saved ${data.co2_saved_kg} kg CO₂`);
-
+      console.log("👉 STEP 5: Received payload from Python:", data);
+      onAction(
+        `✅ Fitness synced — ${durationMin} min ${activityLabel} · saved ${data.co2_saved_kg} kg CO₂`,
+      );
     } catch (error) {
-      console.error('❌ Exception in handleSync:', error);
+      console.error("❌ Exception in handleSync:", error);
       let handled = false;
       try {
-        if (error && typeof error.text === 'function') {
+        if (error && typeof error.text === "function") {
           const errorText = await error.text();
-          if (error.status === 400 && errorText.toLowerCase().includes('unknown datasource')) {
-            alert('No activity data found. Please ensure Google Fit is set up on your device and you have recorded at least one activity.');
+          if (
+            error.status === 400 &&
+            errorText.toLowerCase().includes("unknown datasource")
+          ) {
+            alert(
+              "No activity data found. Please ensure Google Fit is set up on your device and you have recorded at least one activity.",
+            );
             handled = true;
           }
         }
       } catch (e) {
-        console.error('Error reading response body in catch:', e);
+        console.error("Error reading response body in catch:", e);
       }
       if (!handled) {
-        alert('Could not reach Google Fit. Make sure you granted Fitness permissions at sign-in.');
+        alert(
+          "Could not reach Google Fit. Make sure you granted Fitness permissions at sign-in.",
+        );
       }
     } finally {
       setSyncing(false);
@@ -509,11 +589,14 @@ export default function StickyActions({ onAction, user }) {
           hover:bg-green-700 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
       >
         {analyzing ? (
-          <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" aria-hidden="true" />
+          <span
+            className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"
+            aria-hidden="true"
+          />
         ) : (
           <span aria-hidden="true">📷</span>
         )}
-        {analyzing ? 'Analyzing image...' : 'Analyze Impact'}
+        {analyzing ? "Analyzing image..." : "Analyze Impact"}
       </button>
 
       <button
@@ -525,11 +608,14 @@ export default function StickyActions({ onAction, user }) {
           hover:bg-gray-700 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
       >
         {syncing ? (
-          <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" aria-hidden="true" />
+          <span
+            className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"
+            aria-hidden="true"
+          />
         ) : (
           <span aria-hidden="true">🏃‍♂️</span>
         )}
-        {syncing ? 'Syncing…' : 'Sync Fitness'}
+        {syncing ? "Syncing…" : "Sync Fitness"}
       </button>
     </div>
   );

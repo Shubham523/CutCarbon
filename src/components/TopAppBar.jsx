@@ -1,23 +1,44 @@
-import { useState } from 'react';
-import { Menu, X, LayoutDashboard, LineChart, Settings, Leaf, LogOut } from 'lucide-react';
+import PropTypes from "prop-types";
+import { useState } from "react";
+import {
+  Menu,
+  X,
+  LayoutDashboard,
+  LineChart,
+  Settings,
+  Leaf,
+  LogOut,
+} from "lucide-react";
 
 const NAV = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'insights',  label: 'Insights',  icon: LineChart },
-  { id: 'settings',  label: 'Settings',  icon: Settings },
+  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { id: "insights", label: "Insights", icon: LineChart },
+  { id: "settings", label: "Settings", icon: Settings },
 ];
 
 const VIEW_LABELS = {
-  dashboard: 'Dashboard',
-  insights: 'Insights',
-  settings: 'Settings',
+  dashboard: "Dashboard",
+  insights: "Insights",
+  settings: "Settings",
 };
 
+/**
+ * TopAppBar component rendering the navigation bar for mobile layout
+ * and title/logout controls for desktop layout.
+ *
+ * @param {Object} props - The component props.
+ * @param {string} props.activeView - Currently active view ID (e.g. 'dashboard').
+ * @param {Function} props.onNavigate - Callback invoked when navigation occurs.
+ * @param {Function} props.onLogout - Callback invoked when logging out.
+ */
 export default function TopAppBar({ activeView, onNavigate, onLogout }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-30 bg-white border-b border-gray-100" role="banner">
+    <header
+      className="sticky top-0 z-30 bg-white border-b border-gray-100"
+      role="banner"
+    >
       <div className="flex items-center justify-between px-5 h-13">
         {/* Mobile brand */}
         <div className="flex md:hidden items-center gap-2">
@@ -34,7 +55,7 @@ export default function TopAppBar({ activeView, onNavigate, onLogout }) {
         <button
           className="md:hidden p-2 text-gray-500 hover:text-gray-900"
           onClick={() => setMobileOpen(!mobileOpen)}
-          aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+          aria-label={mobileOpen ? "Close menu" : "Open menu"}
           aria-expanded={mobileOpen}
           aria-controls="mobile-nav"
         >
@@ -56,14 +77,20 @@ export default function TopAppBar({ activeView, onNavigate, onLogout }) {
 
       {/* Mobile nav */}
       {mobileOpen && (
-        <nav id="mobile-nav" className="md:hidden border-t border-gray-100 px-3 py-2 space-y-0.5">
+        <nav
+          id="mobile-nav"
+          className="md:hidden border-t border-gray-100 px-3 py-2 space-y-0.5"
+        >
           {NAV.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
-              onClick={() => { onNavigate(id); setMobileOpen(false); }}
-              aria-current={activeView === id ? 'page' : undefined}
+              onClick={() => {
+                onNavigate(id);
+                setMobileOpen(false);
+              }}
+              aria-current={activeView === id ? "page" : undefined}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm text-left
-                ${activeView === id ? 'font-semibold text-gray-900 bg-gray-100' : 'text-gray-500'}`}
+                ${activeView === id ? "font-semibold text-gray-900 bg-gray-100" : "text-gray-500"}`}
             >
               <Icon size={16} aria-hidden="true" />
               {label}
@@ -84,3 +111,9 @@ export default function TopAppBar({ activeView, onNavigate, onLogout }) {
     </header>
   );
 }
+
+TopAppBar.propTypes = {
+  activeView: PropTypes.string.isRequired,
+  onNavigate: PropTypes.func.isRequired,
+  onLogout: PropTypes.func.isRequired,
+};

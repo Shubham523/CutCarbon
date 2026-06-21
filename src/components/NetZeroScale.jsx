@@ -1,9 +1,30 @@
-import { useMemo } from 'react';
+import { useMemo } from "react";
+import PropTypes from "prop-types";
 
+/**
+ * NetZeroScale displays a visual comparative balance scale between
+ * carbon emissions generated and carbon emissions prevented.
+ *
+ * @param {Object} props - The component props.
+ * @param {Array} [props.activities] - List of activity logs.
+ */
 export default function NetZeroScale({ activities = [] }) {
-  const { emitted, saved, totalVolume, emittedPercent, savedPercent, netCarbon } = useMemo(() => {
-    const emittedSum = activities.reduce((sum, a) => sum + Number(a.co2_score_kg ?? a.co2 ?? 0), 0);
-    const savedSum = activities.reduce((sum, a) => sum + Number(a.co2_prevented_kg ?? 0), 0);
+  const {
+    emitted,
+    saved,
+    totalVolume,
+    emittedPercent,
+    savedPercent,
+    netCarbon,
+  } = useMemo(() => {
+    const emittedSum = activities.reduce(
+      (sum, a) => sum + Number(a.co2_score_kg ?? a.co2 ?? 0),
+      0,
+    );
+    const savedSum = activities.reduce(
+      (sum, a) => sum + Number(a.co2_prevented_kg ?? 0),
+      0,
+    );
     const volume = emittedSum + savedSum;
 
     let emittedPct = 50;
@@ -26,8 +47,8 @@ export default function NetZeroScale({ activities = [] }) {
 
   const isNetNegative = netCarbon <= 0;
   const shadowClass = isNetNegative
-    ? 'shadow-[0_0_15px_rgba(34,197,94,0.4)] border-green-200'
-    : 'shadow-[0_0_15px_rgba(239,68,68,0.25)] border-red-150';
+    ? "shadow-[0_0_15px_rgba(34,197,94,0.4)] border-green-200"
+    : "shadow-[0_0_15px_rgba(239,68,68,0.25)] border-red-150";
 
   return (
     <section
@@ -47,16 +68,17 @@ export default function NetZeroScale({ activities = [] }) {
         {/* Badge & net amount */}
         <div className="flex items-center gap-2">
           <span className="text-sm font-bold text-gray-800 tabular-nums">
-            {isNetNegative ? '' : '+'}{netCarbon.toFixed(1)} kg CO₂
+            {isNetNegative ? "" : "+"}
+            {netCarbon.toFixed(1)} kg CO₂
           </span>
           <span
             className={`text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${
               isNetNegative
-                ? 'bg-green-50 text-green-700 border border-green-150'
-                : 'bg-red-50 text-red-600 border border-red-150'
+                ? "bg-green-50 text-green-700 border border-green-150"
+                : "bg-red-50 text-red-600 border border-red-150"
             }`}
           >
-            {isNetNegative ? 'Positive Impact 🌱' : 'Negative Impact ⚠️'}
+            {isNetNegative ? "Positive Impact 🌱" : "Negative Impact ⚠️"}
           </span>
         </div>
       </div>
@@ -109,3 +131,7 @@ export default function NetZeroScale({ activities = [] }) {
     </section>
   );
 }
+
+NetZeroScale.propTypes = {
+  activities: PropTypes.arrayOf(PropTypes.object),
+};

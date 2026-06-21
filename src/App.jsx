@@ -1,32 +1,30 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
-import Sidebar from './components/Sidebar';
-import TopAppBar from './components/TopAppBar';
-import Dashboard from './components/Dashboard';
-const InsightsView = lazy(() => import('./components/InsightsView'));
-const SettingsView = lazy(() => import('./components/SettingsView'));
-import StickyActions from './components/StickyActions';
+import { useState, useEffect, lazy, Suspense } from "react";
+import Sidebar from "./components/Sidebar";
+import TopAppBar from "./components/TopAppBar";
+import Dashboard from "./components/Dashboard";
+const InsightsView = lazy(() => import("./components/InsightsView"));
+const SettingsView = lazy(() => import("./components/SettingsView"));
+import StickyActions from "./components/StickyActions";
 
 export default function App() {
   const [user, setUser] = useState(null);
-  const [activeView, setActiveView] = useState('dashboard');
+  const [activeView, setActiveView] = useState("dashboard");
   const [activities, setActivities] = useState([]);
   const [settings, setSettings] = useState({});
   const [toast, setToast] = useState(null);
-
 
   // Defer Firebase initialisation: runs after the first paint so it does
   // not block the Login screen from appearing immediately.
   useEffect(() => {
     let unsubscribe = () => {};
     // Both imports are cached by the module system after the first call
-    Promise.all([
-      import('../firebase'),
-      import('firebase/auth'),
-    ]).then(([{ auth }, { onAuthStateChanged }]) => {
-      unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-        setUser(currentUser);
-      });
-    });
+    Promise.all([import("../firebase"), import("firebase/auth")]).then(
+      ([{ auth }, { onAuthStateChanged }]) => {
+        unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+          setUser(currentUser);
+        });
+      },
+    );
     return () => unsubscribe();
   }, []);
 
@@ -40,41 +38,50 @@ export default function App() {
     let unsubscribe = () => {};
 
     // Dynamic import keeps Firestore off the critical path
-    Promise.all([
-      import('../firebase'),
-      import('firebase/firestore'),
-    ]).then(([{ db }, { collection, query, where, orderBy, onSnapshot, Timestamp }]) => {
-      const oneWeekAgo = new Date();
-      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    Promise.all([import("../firebase"), import("firebase/firestore")]).then(
+      ([
+        { db },
+        { collection, query, where, orderBy, onSnapshot, Timestamp },
+      ]) => {
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-      const q = query(
-        collection(db, 'users', user.uid, 'logs'),
-        where('timestamp', '>=', Timestamp.fromDate(oneWeekAgo)),
-        orderBy('timestamp', 'desc')
-      );
+        const q = query(
+          collection(db, "users", user.uid, "logs"),
+          where("timestamp", ">=", Timestamp.fromDate(oneWeekAgo)),
+          orderBy("timestamp", "desc"),
+        );
 
-      unsubscribe = onSnapshot(q, (snapshot) => {
-        const docs = snapshot.docs.map((docSnap) => {
-          const data = docSnap.data();
-          return {
-            ...data,
-            id: docSnap.id,
-            description: data.description ??
-              (data.items?.length
-                ? `${data.items.length} grocery item${data.items.length > 1 ? 's' : ''}`
-                : 'Grocery analysis'),
-            co2: data.co2_score_kg ?? data.co2 ?? 0,
-            category:  data.category  ?? 'Groceries',
-            icon:      data.icon      ?? '🛒',
-            item_name: data.item_name ?? null,
-            timestamp: data.timestamp?.toDate?.().toISOString() ?? new Date().toISOString(),
-          };
-        });
-        setActivities(docs);
-      }, (error) => {
-        console.error('Firestore listener error:', error);
-      });
-    });
+        unsubscribe = onSnapshot(
+          q,
+          (snapshot) => {
+            const docs = snapshot.docs.map((docSnap) => {
+              const data = docSnap.data();
+              return {
+                ...data,
+                id: docSnap.id,
+                description:
+                  data.description ??
+                  (data.items?.length
+                    ? `${data.items.length} grocery item${data.items.length > 1 ? "s" : ""}`
+                    : "Grocery analysis"),
+                co2: data.co2_score_kg ?? data.co2 ?? 0,
+                category: data.category ?? "Groceries",
+                icon: data.icon ?? "🛒",
+                item_name: data.item_name ?? null,
+                timestamp:
+                  data.timestamp?.toDate?.().toISOString() ??
+                  new Date().toISOString(),
+              };
+            });
+            setActivities(docs);
+          },
+          (error) => {
+            console.error("Firestore listener error:", error);
+          },
+        );
+      },
+    );
 
     return () => unsubscribe();
   }, [user]);
@@ -88,27 +95,31 @@ export default function App() {
 
     let unsubscribe = () => {};
 
-    Promise.all([
-      import('../firebase'),
-      import('firebase/firestore'),
-    ]).then(([{ db }, { doc, onSnapshot }]) => {
-      const userDocRef = doc(db, 'users', user.uid);
-      unsubscribe = onSnapshot(userDocRef, (docSnap) => {
-        if (docSnap.exists() && docSnap.data().settings) {
-          setSettings(docSnap.data().settings);
-        }
-      }, (error) => {
-        console.error('User doc listener error:', error);
-      });
-    });
+    Promise.all([import("../firebase"), import("firebase/firestore")]).then(
+      ([{ db }, { doc, onSnapshot }]) => {
+        const userDocRef = doc(db, "users", user.uid);
+        unsubscribe = onSnapshot(
+          userDocRef,
+          (docSnap) => {
+            if (docSnap.exists() && docSnap.data().settings) {
+              setSettings(docSnap.data().settings);
+            }
+          },
+          (error) => {
+            console.error("User doc listener error:", error);
+          },
+        );
+      },
+    );
 
     return () => unsubscribe();
   }, [user]);
 
   const handleLogin = async () => {
     try {
-      const { auth, provider } = await import('../firebase');
-      const { signInWithPopup, GoogleAuthProvider } = await import('firebase/auth');
+      const { auth, provider } = await import("../firebase");
+      const { signInWithPopup, GoogleAuthProvider } =
+        await import("firebase/auth");
       const result = await signInWithPopup(auth, provider);
       const credential = GoogleAuthProvider.credentialFromResult(result);
       const token = credential?.accessToken;
@@ -120,8 +131,8 @@ export default function App() {
 
   const handleLogout = async () => {
     try {
-      const { auth } = await import('../firebase');
-      const { signOut } = await import('firebase/auth');
+      const { auth } = await import("../firebase");
+      const { signOut } = await import("firebase/auth");
       await signOut(auth);
       localStorage.removeItem("google_fit_token");
     } catch (error) {
@@ -137,7 +148,7 @@ export default function App() {
       <div className="h-screen flex flex-col items-center justify-center bg-white p-6">
         <h1 className="text-4xl font-bold text-gray-900 mb-2">CutCarbon</h1>
         <p className="text-gray-600 mb-8">Track your footprint effortlessly.</p>
-        <button 
+        <button
           onClick={handleLogin}
           className="w-full max-w-sm bg-gray-900 text-white py-4 rounded-full font-bold text-lg"
         >
@@ -154,20 +165,20 @@ export default function App() {
 
   async function handleDelete(id) {
     try {
-      const { db } = await import('../firebase');
-      const { deleteDoc, doc } = await import('firebase/firestore');
-      await deleteDoc(doc(db, 'users', user.uid, 'logs', id));
+      const { db } = await import("../firebase");
+      const { deleteDoc, doc } = await import("firebase/firestore");
+      await deleteDoc(doc(db, "users", user.uid, "logs", id));
     } catch (error) {
-      console.error('Delete failed:', error);
-      showToast('Could not delete — please try again.');
+      console.error("Delete failed:", error);
+      showToast("Could not delete — please try again.");
     }
   }
 
   // Optimistic patch: update a single activity in local state immediately
   // after a TransitSwap Firestore write, before onSnapshot fires.
   function handleEntryUpdate(id, patch) {
-    setActivities(prev =>
-      prev.map(a =>
+    setActivities((prev) =>
+      prev.map((a) =>
         a.id === id
           ? {
               ...a,
@@ -184,19 +195,35 @@ export default function App() {
       <Sidebar activeView={activeView} onNavigate={setActiveView} />
 
       <div className="flex-1 flex flex-col min-w-0">
-        <TopAppBar activeView={activeView} onNavigate={setActiveView} onLogout={handleLogout} />
+        <TopAppBar
+          activeView={activeView}
+          onNavigate={setActiveView}
+          onLogout={handleLogout}
+        />
 
         <main
           id="main-content"
           className="flex-1 px-5 md:px-8 py-8 pb-28 overflow-auto"
           aria-label={`${activeView} view`}
         >
-          <Suspense fallback={<div className="text-center p-4">Loading...</div>}>
-            {activeView === 'dashboard' && (
-              <Dashboard activities={activities} onDelete={handleDelete} onEntryUpdate={handleEntryUpdate} user={user} settings={settings} />
+          <Suspense
+            fallback={<div className="text-center p-4">Loading...</div>}
+          >
+            {activeView === "dashboard" && (
+              <Dashboard
+                activities={activities}
+                onDelete={handleDelete}
+                onEntryUpdate={handleEntryUpdate}
+                user={user}
+                settings={settings}
+              />
             )}
-            {activeView === 'insights'  && <InsightsView activities={activities} settings={settings} />}
-            {activeView === 'settings'  && <SettingsView user={user} settings={settings} />}
+            {activeView === "insights" && (
+              <InsightsView activities={activities} settings={settings} />
+            )}
+            {activeView === "settings" && (
+              <SettingsView user={user} settings={settings} />
+            )}
           </Suspense>
         </main>
       </div>

@@ -1,13 +1,19 @@
-import { useMemo } from 'react';
+import { useMemo } from "react";
 
 function getEmitterAdvice(name, value, totalFootprint) {
-  const percentage = totalFootprint > 0 ? Math.round((value / totalFootprint) * 100) : 0;
+  const percentage =
+    totalFootprint > 0 ? Math.round((value / totalFootprint) * 100) : 0;
   const key = name.toLowerCase();
-  
-  if (key === 'solo car' || key === 'in vehicle' || key.includes('solo car') || key.includes('vehicle')) {
+
+  if (
+    key === "solo car" ||
+    key === "in vehicle" ||
+    key.includes("solo car") ||
+    key.includes("vehicle")
+  ) {
     return `Solo driving makes up ${percentage}% of your footprint. Try carpooling once this week to cut this down.`;
   }
-  if (key.includes('grocery') || key.includes('food')) {
+  if (key.includes("grocery") || key.includes("food")) {
     return `Groceries make up ${percentage}% of your footprint. Consider buying local produce or reducing meat intake to lower this.`;
   }
   return `${name} makes up ${percentage}% of your footprint. Look for eco-friendly alternatives to reduce this impact.`;
@@ -16,17 +22,35 @@ function getEmitterAdvice(name, value, totalFootprint) {
 function getSaverAdvice(name, value) {
   const key = name.toLowerCase();
   const X = value.toFixed(1);
-  
-  if (key === 'walking' || key === 'on foot' || key.includes('walking') || key === 'on_foot') {
+
+  if (
+    key === "walking" ||
+    key === "on foot" ||
+    key.includes("walking") ||
+    key === "on_foot"
+  ) {
     return `Your morning walks are your biggest carbon offset! You've neutralized ${X} kg of CO2 just by staying on your feet.`;
   }
-  if (key.includes('bike') || key.includes('cycling') || key.includes('biking')) {
+  if (
+    key.includes("bike") ||
+    key.includes("cycling") ||
+    key.includes("biking")
+  ) {
     return `Pedal power is paying off! You've avoided ${X} kg of CO2 by choosing to bike instead of drive.`;
   }
-  if (key.includes('run') || key.includes('aerobics') || key.includes('treadmill')) {
+  if (
+    key.includes("run") ||
+    key.includes("aerobics") ||
+    key.includes("treadmill")
+  ) {
     return `Running is keeping both you and the planet fit! You've prevented ${X} kg of CO2 emissions.`;
   }
-  if (key.includes('bus') || key.includes('train') || key.includes('metro') || key.includes('carpool')) {
+  if (
+    key.includes("bus") ||
+    key.includes("train") ||
+    key.includes("metro") ||
+    key.includes("carpool")
+  ) {
     return `Choosing transit or carpooling saved ${X} kg of CO2 vs. driving solo. Keep up the sustainable travel habits!`;
   }
   return `By choosing ${name}, you've saved ${X} kg of CO2 this week. Every green choice counts!`;
@@ -40,14 +64,14 @@ export default function ContributorsAndActions({ activities = [] }) {
 
     activities.forEach((a) => {
       // Use item_name, fallback to category, fallback to 'Unknown'
-      const name = a.item_name || a.category || 'Unknown';
-      
+      const name = a.item_name || a.category || "Unknown";
+
       const score = Number(a.co2_score_kg ?? a.co2 ?? 0);
       if (score > 0) {
         emittersDict[name] = (emittersDict[name] || 0) + score;
         total += score;
       }
-      
+
       const prevented = Number(a.co2_prevented_kg ?? 0);
       if (prevented > 0) {
         saversDict[name] = (saversDict[name] || 0) + prevented;
@@ -87,7 +111,10 @@ export default function ContributorsAndActions({ activities = [] }) {
     : null;
 
   return (
-    <section aria-label="Contributors and Actions" className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+    <section
+      aria-label="Contributors and Actions"
+      className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm"
+    >
       <h2 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
         <span className="text-xl">📊</span> Contributors &amp; Actions
       </h2>
@@ -102,7 +129,9 @@ export default function ContributorsAndActions({ activities = [] }) {
               Top Emitters (kg CO₂)
             </h3>
             {topEmitters.length === 0 ? (
-              <p className="text-xs text-gray-400 py-2">No emitters recorded this week.</p>
+              <p className="text-xs text-gray-400 py-2">
+                No emitters recorded this week.
+              </p>
             ) : (
               <div className="space-y-3">
                 {topEmitters.map((item) => {
@@ -111,7 +140,9 @@ export default function ContributorsAndActions({ activities = [] }) {
                     <div key={item.name} className="space-y-1">
                       <div className="flex justify-between text-xs font-medium text-gray-600">
                         <span>{item.name}</span>
-                        <span className="tabular-nums">{item.value.toFixed(1)} kg</span>
+                        <span className="tabular-nums">
+                          {item.value.toFixed(1)} kg
+                        </span>
                       </div>
                       <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                         <div
@@ -137,7 +168,9 @@ export default function ContributorsAndActions({ activities = [] }) {
               Top Savers (kg CO₂ saved)
             </h3>
             {topSavers.length === 0 ? (
-              <p className="text-xs text-gray-400 py-2">No savers recorded this week.</p>
+              <p className="text-xs text-gray-400 py-2">
+                No savers recorded this week.
+              </p>
             ) : (
               <div className="space-y-3">
                 {topSavers.map((item) => {
@@ -146,7 +179,9 @@ export default function ContributorsAndActions({ activities = [] }) {
                     <div key={item.name} className="space-y-1">
                       <div className="flex justify-between text-xs font-medium text-gray-600">
                         <span>{item.name}</span>
-                        <span className="tabular-nums">{item.value.toFixed(1)} kg</span>
+                        <span className="tabular-nums">
+                          {item.value.toFixed(1)} kg
+                        </span>
                       </div>
                       <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                         <div
@@ -174,13 +209,20 @@ export default function ContributorsAndActions({ activities = [] }) {
 
           {!topEmitter && !topSaver ? (
             <p className="text-xs text-gray-400 py-4 text-center">
-              No activity logs found for this week. Start logging or sync your data to see custom insights.
+              No activity logs found for this week. Start logging or sync your
+              data to see custom insights.
             </p>
           ) : (
             <div className="space-y-4">
               {topEmitter && emitterAdvice && (
                 <div className="flex gap-3 items-start">
-                  <div className="text-lg mt-0.5" role="img" aria-label="Warning">⚠️</div>
+                  <div
+                    className="text-lg mt-0.5"
+                    role="img"
+                    aria-label="Warning"
+                  >
+                    ⚠️
+                  </div>
                   <div>
                     <h4 className="text-xs font-semibold text-red-600 uppercase tracking-wider mb-0.5">
                       Top Emission Contributor
@@ -194,7 +236,9 @@ export default function ContributorsAndActions({ activities = [] }) {
 
               {topSaver && saverAdvice && (
                 <div className="flex gap-3 items-start pt-3 border-t border-gray-100">
-                  <div className="text-lg mt-0.5" role="img" aria-label="Leaf">🌱</div>
+                  <div className="text-lg mt-0.5" role="img" aria-label="Leaf">
+                    🌱
+                  </div>
                   <div>
                     <h4 className="text-xs font-semibold text-green-600 uppercase tracking-wider mb-0.5">
                       Top Carbon Offset

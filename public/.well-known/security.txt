@@ -1,0 +1,13 @@
+# Security contact information for CutCarbon
+# https://cutcarbon.web.app
+# Follows RFC 9116: https://www.rfc-editor.org/rfc/rfc9116
+
+Contact: mailto:security@cutcarbon.app
+Preferred-Languages: en
+Canonical: https://cutcarbon.web.app/.well-known/security.txt
+Expires: 2027-06-21T00:00:00.000Z
+
+Policy: https://cutcarbon.web.app/security-policy
+
+# Please report any security vulnerabilities responsibly.
+# We will acknowledge reports within 72 hours.

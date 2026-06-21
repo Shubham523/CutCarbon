@@ -1,11 +1,19 @@
-import { LayoutDashboard, LineChart, Settings, Leaf } from 'lucide-react';
+import PropTypes from "prop-types";
+import { LayoutDashboard, LineChart, Settings, Leaf } from "lucide-react";
 
 const NAV = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'insights',  label: 'Insights',  icon: LineChart },
-  { id: 'settings',  label: 'Settings',  icon: Settings },
+  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { id: "insights", label: "Insights", icon: LineChart },
+  { id: "settings", label: "Settings", icon: Settings },
 ];
 
+/**
+ * Sidebar component rendering the main navigation sidebar (desktop layout).
+ *
+ * @param {Object} props - The component props.
+ * @param {string} props.activeView - Currently active view ID (e.g. 'dashboard').
+ * @param {Function} props.onNavigate - Callback function to navigate between tabs.
+ */
 export default function Sidebar({ activeView, onNavigate }) {
   return (
     <aside
@@ -15,7 +23,9 @@ export default function Sidebar({ activeView, onNavigate }) {
       {/* Brand */}
       <div className="flex items-center gap-2 px-5 py-5">
         <Leaf size={16} className="text-green-600" aria-hidden="true" />
-        <span className="text-sm font-semibold text-gray-900 tracking-tight">CutCarbon</span>
+        <span className="text-sm font-semibold text-gray-900 tracking-tight">
+          CutCarbon
+        </span>
       </div>
 
       {/* Nav */}
@@ -27,11 +37,15 @@ export default function Sidebar({ activeView, onNavigate }) {
               key={id}
               id={`nav-${id}`}
               onClick={() => onNavigate(id)}
-              aria-current={active ? 'page' : undefined}
+              aria-current={active ? "page" : undefined}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm text-left
-                ${active ? 'font-semibold text-gray-900 bg-gray-100' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'}`}
+                ${active ? "font-semibold text-gray-900 bg-gray-100" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"}`}
             >
-              <Icon size={16} strokeWidth={active ? 2.5 : 2} aria-hidden="true" />
+              <Icon
+                size={16}
+                strokeWidth={active ? 2.5 : 2}
+                aria-hidden="true"
+              />
               {label}
             </button>
           );
@@ -40,3 +54,8 @@ export default function Sidebar({ activeView, onNavigate }) {
     </aside>
   );
 }
+
+Sidebar.propTypes = {
+  activeView: PropTypes.string.isRequired,
+  onNavigate: PropTypes.func.isRequired,
+};

@@ -16,6 +16,8 @@ vite.config.js.timestamp-*
 .env
 .env.local
 .env.*.local
+# NOTE: .env.example files are intentionally NOT listed here —
+#       they contain only placeholder values and should be committed.
 
 # ─── Firebase ──────────────────────────────────────────────────────
 .firebase/

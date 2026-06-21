@@ -1,13 +1,22 @@
+import PropTypes from "prop-types";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, ResponsiveContainer,
-} from 'recharts';
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 
-const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 /**
- * Build a 7-element array (one entry per day, Sun→Sat order matching the last 7 days)
- * from the live activities array passed down from App.
+ * Builds a 7-element daily data slot array (Sun to Sat) for the past 7 days.
+ *
+ * @param {Array} activities - List of activity logs.
+ * @returns {Array} - The structured daily slot array.
  */
 function buildWeeklyBuckets(activities) {
   const today = new Date();
@@ -37,22 +46,37 @@ function buildWeeklyBuckets(activities) {
   return slots;
 }
 
+/**
+ * Tooltip overlay renderer for the weekly bar chart.
+ */
+function CustomTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-white border border-gray-150 rounded-lg px-3 py-2 text-xs shadow-sm">
+      <p className="font-semibold text-gray-700 mb-1">{label}</p>
+      {payload.map((p, idx) => (
+        <p key={idx} style={{ color: p.color }} className="font-medium">
+          {p.name}: {p.value.toFixed(2)} kg
+        </p>
+      ))}
+    </div>
+  );
+}
+
+CustomTooltip.propTypes = {
+  active: PropTypes.bool,
+  payload: PropTypes.arrayOf(PropTypes.object),
+  label: PropTypes.string,
+};
+
+/**
+ * WeeklyChart component displaying daily emissions vs savings using Recharts.
+ *
+ * @param {Object} props - The component props.
+ * @param {Array} [props.activities] - List of activity logs.
+ */
 export default function WeeklyChart({ activities = [] }) {
   const weeklyData = buildWeeklyBuckets(activities);
-
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (!active || !payload?.length) return null;
-    return (
-      <div className="bg-white border border-gray-150 rounded-lg px-3 py-2 text-xs shadow-sm">
-        <p className="font-semibold text-gray-700 mb-1">{label}</p>
-        {payload.map((p, idx) => (
-          <p key={idx} style={{ color: p.color }} className="font-medium">
-            {p.name}: {p.value.toFixed(2)} kg
-          </p>
-        ))}
-      </div>
-    );
-  };
 
   return (
     <section aria-label="Weekly emissions chart">
@@ -60,16 +84,51 @@ export default function WeeklyChart({ activities = [] }) {
         Daily emissions &amp; savings — this week
       </p>
       <ResponsiveContainer width="100%" height={220}>
-        <BarChart data={weeklyData} barGap={2} barCategoryGap="25%" margin={{ top: 4, right: 0, left: -20, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
-          <XAxis dataKey="day" tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} unit=" kg" />
-          <Tooltip content={<CustomTooltip />} cursor={{ fill: '#fafafa' }} />
+        <BarChart
+          data={weeklyData}
+          barGap={2}
+          barCategoryGap="25%"
+          margin={{ top: 4, right: 0, left: -20, bottom: 0 }}
+        >
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke="#f3f4f6"
+            vertical={false}
+          />
+          <XAxis
+            dataKey="day"
+            tick={{ fontSize: 11, fill: "#9ca3af" }}
+            axisLine={false}
+            tickLine={false}
+          />
+          <YAxis
+            tick={{ fontSize: 11, fill: "#9ca3af" }}
+            axisLine={false}
+            tickLine={false}
+            unit=" kg"
+          />
+          <Tooltip content={<CustomTooltip />} cursor={{ fill: "#fafafa" }} />
           <Legend wrapperStyle={{ fontSize: 11, paddingTop: 10 }} />
-          <Bar dataKey="emitted" name="Emitted CO₂" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={16} />
-          <Bar dataKey="prevented" name="Prevented CO₂" fill="#22c55e" radius={[4, 4, 0, 0]} maxBarSize={16} />
+          <Bar
+            dataKey="emitted"
+            name="Emitted CO₂"
+            fill="#ef4444"
+            radius={[4, 4, 0, 0]}
+            maxBarSize={16}
+          />
+          <Bar
+            dataKey="prevented"
+            name="Prevented CO₂"
+            fill="#22c55e"
+            radius={[4, 4, 0, 0]}
+            maxBarSize={16}
+          />
         </BarChart>
       </ResponsiveContainer>
     </section>
   );
 }
+
+WeeklyChart.propTypes = {
+  activities: PropTypes.arrayOf(PropTypes.object),
+};

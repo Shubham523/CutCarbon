@@ -1,0 +1,17 @@
+User-agent: *
+
+# Block auth and internal paths
+Disallow: /api/
+Disallow: /auth/
+Disallow: /login
+Disallow: /dashboard
+Disallow: /settings
+Disallow: /insights
+Disallow: /dist/
+Disallow: /.firebase/
+Disallow: /.env
+
+# Allow the landing/login page only
+Allow: /$
+
+Sitemap: https://cutcarbon.web.app/sitemap.xml

@@ -1,16 +1,32 @@
+import PropTypes from "prop-types";
+
+/**
+ * StatsRow displays key summary indicators: average emissions per day,
+ * count of low-impact events, and top carbon-contributing category.
+ *
+ * @param {Object} props - The component props.
+ * @param {Array} props.activities - List of activities logged by the user.
+ */
 export default function StatsRow({ activities }) {
-  const avg = (activities.reduce((s, a) => s + a.co2, 0) / 7).toFixed(1);
-  const lowImpact = activities.filter(a => a.co2 <= 1).length;
+  const avg = (
+    activities.reduce((s, a) => s + (a.co2 ?? a.co2_score_kg ?? 0), 0) / 7
+  ).toFixed(1);
+  const lowImpact = activities.filter(
+    (a) => (a.co2 ?? a.co2_score_kg ?? 0) <= 1,
+  ).length;
   const topCategory = (() => {
     const totals = {};
-    activities.forEach(a => { totals[a.category] = (totals[a.category] || 0) + a.co2; });
-    return Object.entries(totals).sort((x, y) => y[1] - x[1])[0]?.[0] ?? '—';
+    activities.forEach((a) => {
+      const val = a.co2 ?? a.co2_score_kg ?? 0;
+      totals[a.category] = (totals[a.category] || 0) + val;
+    });
+    return Object.entries(totals).sort((x, y) => y[1] - x[1])[0]?.[0] ?? "—";
   })();
 
   const stats = [
-    { label: 'Avg / day',    value: `${avg} kg` },
-    { label: 'Low-impact',   value: `${lowImpact} logs` },
-    { label: 'Top category', value: topCategory },
+    { label: "Avg / day", value: `${avg} kg` },
+    { label: "Low-impact", value: `${lowImpact} logs` },
+    { label: "Top category", value: topCategory },
   ];
 
   return (
@@ -27,3 +43,7 @@ export default function StatsRow({ activities }) {
     </section>
   );
 }
+
+StatsRow.propTypes = {
+  activities: PropTypes.arrayOf(PropTypes.object).isRequired,
+};

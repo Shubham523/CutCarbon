@@ -11,6 +11,7 @@
   "dependencies": {
     "firebase": "^12.14.0",
     "lucide-react": "^0.469.0",
+    "prop-types": "^15.8.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "recharts": "^2.15.0"
@@ -19,6 +20,7 @@
     "@tailwindcss/vite": "^4.1.8",
     "@vitejs/plugin-react": "^4.3.4",
     "tailwindcss": "^4.1.8",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "vite-plugin-remove-console": "^2.2.0"
   }
 }
