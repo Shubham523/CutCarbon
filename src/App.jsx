@@ -6,6 +6,10 @@ const InsightsView = lazy(() => import("./components/InsightsView"));
 const SettingsView = lazy(() => import("./components/SettingsView"));
 import StickyActions from "./components/StickyActions";
 
+/**
+ * Main application component responsible for state routing, Firebase Auth state sync,
+ * real-time Firestore listeners, and layout structure.
+ */
 export default function App() {
   const [user, setUser] = useState(null);
   const [activeView, setActiveView] = useState("dashboard");
@@ -115,6 +119,9 @@ export default function App() {
     return () => unsubscribe();
   }, [user]);
 
+  /**
+   * Triggers the Google Sign-In pop-up flow using Firebase Authentication.
+   */
   const handleLogin = async () => {
     try {
       const { auth, provider } = await import("../firebase");
@@ -129,6 +136,9 @@ export default function App() {
     }
   };
 
+  /**
+   * Triggers the Sign-Out flow using Firebase Authentication and cleans tokens.
+   */
   const handleLogout = async () => {
     try {
       const { auth } = await import("../firebase");
@@ -158,11 +168,21 @@ export default function App() {
     );
   }
 
+  /**
+   * Renders a temporary floating toast message to the user.
+   *
+   * @param {string} msg - The text to display in the toast notification.
+   */
   function showToast(msg) {
     setToast(msg);
     setTimeout(() => setToast(null), 3000);
   }
 
+  /**
+   * Deletes a log entry from Firestore.
+   *
+   * @param {string} id - The Firestore document identifier for the log.
+   */
   async function handleDelete(id) {
     try {
       const { db } = await import("../firebase");
@@ -176,6 +196,12 @@ export default function App() {
 
   // Optimistic patch: update a single activity in local state immediately
   // after a TransitSwap Firestore write, before onSnapshot fires.
+  /**
+   * Optimistically updates a single activity log entry's fields in local state.
+   *
+   * @param {string} id - The document ID of the activity log.
+   * @param {Object} patch - The values to merge into the activity object.
+   */
   function handleEntryUpdate(id, patch) {
     setActivities((prev) =>
       prev.map((a) =>

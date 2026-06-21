@@ -1,5 +1,14 @@
 import { useMemo } from "react";
+import PropTypes from "prop-types";
 
+/**
+ * Returns advice based on the top carbon contributor.
+ *
+ * @param {string} name - Name of the category or item.
+ * @param {number} value - Carbon value in kg.
+ * @param {number} totalFootprint - Total weekly carbon footprint.
+ * @returns {string} - Personalized advisory sentence.
+ */
 function getEmitterAdvice(name, value, totalFootprint) {
   const percentage =
     totalFootprint > 0 ? Math.round((value / totalFootprint) * 100) : 0;
@@ -19,6 +28,13 @@ function getEmitterAdvice(name, value, totalFootprint) {
   return `${name} makes up ${percentage}% of your footprint. Look for eco-friendly alternatives to reduce this impact.`;
 }
 
+/**
+ * Returns advice based on the top carbon saver (offset).
+ *
+ * @param {string} name - Name of the category or item.
+ * @param {number} value - Saved carbon value in kg.
+ * @returns {string} - Personalized offset encouragement sentence.
+ */
 function getSaverAdvice(name, value) {
   const key = name.toLowerCase();
   const X = value.toFixed(1);
@@ -56,6 +72,13 @@ function getSaverAdvice(name, value) {
   return `By choosing ${name}, you've saved ${X} kg of CO2 this week. Every green choice counts!`;
 }
 
+/**
+ * ContributorsAndActions rendering the top carbon emitter/saver listings
+ * and custom dynamic insights.
+ *
+ * @param {Object} props - The component props.
+ * @param {Array} [props.activities] - List of activity logs.
+ */
 export default function ContributorsAndActions({ activities = [] }) {
   const { emitters, savers, totalFootprint } = useMemo(() => {
     const emittersDict = {};
@@ -256,3 +279,7 @@ export default function ContributorsAndActions({ activities = [] }) {
     </section>
   );
 }
+
+ContributorsAndActions.propTypes = {
+  activities: PropTypes.arrayOf(PropTypes.object),
+};

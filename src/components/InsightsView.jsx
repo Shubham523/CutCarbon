@@ -1,4 +1,5 @@
 import { useState } from "react";
+import PropTypes from "prop-types";
 import {
   LineChart,
   Line,
@@ -26,6 +27,10 @@ const DEFAULT_COLOR = "#6b7280";
 
 /**
  * Group activities into daily buckets for the last 7 days (oldest → newest).
+ *
+ * @param {Array} activities - List of activity logs.
+ * @param {number} dailyTarget - The carbon emission target for a single day.
+ * @returns {Array} - Aggregated daily data array.
  */
 function buildWeeklyData(activities, dailyTarget) {
   const today = new Date();
@@ -46,6 +51,9 @@ function buildWeeklyData(activities, dailyTarget) {
 
 /**
  * Aggregate co2 totals per category from the activities list.
+ *
+ * @param {Array} activities - List of activity logs.
+ * @returns {Array} - Emissions grouped and sorted by categories.
  */
 function buildCategoryData(activities) {
   const totals = {};
@@ -58,6 +66,9 @@ function buildCategoryData(activities) {
     .sort((a, b) => b.current - a.current);
 }
 
+/**
+ * Tooltip overlay component for the daily emissions line chart.
+ */
 const Tip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
@@ -68,6 +79,19 @@ const Tip = ({ active, payload, label }) => {
   );
 };
 
+Tip.propTypes = {
+  active: PropTypes.bool,
+  payload: PropTypes.arrayOf(PropTypes.object),
+  label: PropTypes.string,
+};
+
+/**
+ * InsightsView rendering analytics, daily charts, and categorization logs.
+ *
+ * @param {Object} props - The component props.
+ * @param {Array} [props.activities] - List of activity logs.
+ * @param {Object} [props.settings] - Current user settings.
+ */
 export default function InsightsView({ activities = [], settings = {} }) {
   const [tab, setTab] = useState("Weekly");
   const dailyTarget = settings.dailyTargetKg ?? 10;
@@ -210,3 +234,10 @@ export default function InsightsView({ activities = [], settings = {} }) {
     </div>
   );
 }
+
+InsightsView.propTypes = {
+  activities: PropTypes.arrayOf(PropTypes.object),
+  settings: PropTypes.shape({
+    dailyTargetKg: PropTypes.number,
+  }),
+};

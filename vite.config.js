@@ -7,8 +7,11 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    removeConsole(),
+    removeConsole({ removeLevels: ['log', 'warn'] }),
   ],
+  esbuild: {
+    drop: ['debugger'],
+  },
   build: {
     minify: 'esbuild',
     cssCodeSplit: true,
