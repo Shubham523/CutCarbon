@@ -1,3 +1,4 @@
+import { memo } from "react";
 import PropTypes from "prop-types";
 
 const BAR_COLORS = {
@@ -16,7 +17,7 @@ const DEFAULT_COLOR = "#6b7280";
  * @param {Array} props.categoryData - Pre-calculated category list.
  * @param {number} props.maxCo2 - Pre-calculated max CO2 value for percent representation.
  */
-export default function CategoryEmissionsTab({ categoryData, maxCo2 }) {
+function CategoryEmissionsTab({ categoryData, maxCo2 }) {
   return (
     <section aria-label="Emissions by category">
       <p className="text-xs text-gray-400 uppercase tracking-widest mb-6">
@@ -63,3 +64,5 @@ CategoryEmissionsTab.propTypes = {
   categoryData: PropTypes.arrayOf(PropTypes.object).isRequired,
   maxCo2: PropTypes.number.isRequired,
 };
+
+export default memo(CategoryEmissionsTab);

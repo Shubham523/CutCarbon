@@ -7,10 +7,16 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    removeConsole({ removeLevels: ['log', 'warn'] }),
+    removeConsole({ removeLevels: ['log', 'warn', 'error', 'info', 'debug'] }),
   ],
   esbuild: {
     drop: ['debugger'],
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.js'],
+    css: false,
   },
   build: {
     minify: 'esbuild',

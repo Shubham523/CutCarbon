@@ -134,7 +134,7 @@ export default function useStickyActions({ onAction, user }) {
 
       const items = Array.isArray(data.items) ? data.items : [];
       if (items.length === 0) {
-        alert("Analysis completed, but no items were detected.");
+        onAction("⚠️ Analysis completed, but no items were detected.");
         return;
       }
 
@@ -155,10 +155,9 @@ export default function useStickyActions({ onAction, user }) {
       });
       await batch.commit();
 
-      alert(`${items.length} items analyzed and added!`);
       onAction(`🛒 ${items.length} items analyzed and added!`);
-    } catch (error) {
-      alert("Failed to analyze image. Please try again.");
+    } catch (_) {
+      onAction("❌ Failed to analyze image. Please try again.");
     } finally {
       setAnalyzing(false);
       e.target.value = "";
@@ -167,7 +166,7 @@ export default function useStickyActions({ onAction, user }) {
 
   const handleSync = async () => {
     if (!user) {
-      alert("Frontend Blocked: User object is null or undefined!");
+      onAction("⚠️ Please sign in to sync fitness data.");
       return;
     }
 
@@ -281,7 +280,7 @@ export default function useStickyActions({ onAction, user }) {
       const mergedActivities = processAndMergeActivities(filteredActivities);
 
       if (mergedActivities.length === 0) {
-        alert("No new activity segments to sync.");
+        onAction("ℹ️ No new activity segments to sync.");
         setSyncing(false);
         return;
       }
@@ -379,18 +378,18 @@ export default function useStickyActions({ onAction, user }) {
             error.status === 400 &&
             errorText.toLowerCase().includes("unknown datasource")
           ) {
-            alert(
-              "No activity data found. Please ensure Google Fit is set up on your device and you have recorded at least one activity.",
+            onAction(
+              "⚠️ No activity data found. Please ensure Google Fit is set up on your device.",
             );
             handled = true;
           }
         }
-      } catch (e) {
-        // Suppress secondary parsing failures
+      } catch (_) {
+        /* Suppress secondary parsing failures */
       }
       if (!handled) {
-        alert(
-          "Could not reach Google Fit. Make sure you granted Fitness permissions at sign-in.",
+        onAction(
+          "❌ Could not reach Google Fit. Make sure you granted Fitness permissions at sign-in.",
         );
       }
     } finally {

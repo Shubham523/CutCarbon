@@ -1,3 +1,4 @@
+import { memo } from "react";
 import PropTypes from "prop-types";
 
 /**
@@ -7,7 +8,7 @@ import PropTypes from "prop-types";
  * @param {Array} props.topSavers - Sorted list of carbon savings activities.
  * @param {number} props.maxSaverVal - Maximum savings value for scale.
  */
-export default function SaversList({ topSavers, maxSaverVal }) {
+function SaversList({ topSavers, maxSaverVal }) {
   return (
     <div>
       <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
@@ -58,3 +59,5 @@ SaversList.propTypes = {
   ).isRequired,
   maxSaverVal: PropTypes.number.isRequired,
 };
+
+export default memo(SaversList);

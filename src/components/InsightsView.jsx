@@ -81,13 +81,15 @@ export default function InsightsView({ activities = [], settings = {} }) {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-gray-150" role="tablist">
+      <div className="flex gap-1 border-b border-gray-150" role="tablist" aria-label="Insights view tabs">
         {TABS.map((t) => (
           <button
             key={t}
             role="tab"
             id={`tab-${t}`}
             aria-selected={tab === t}
+            aria-controls={`tabpanel-${t}`}
+            aria-label={`View ${t} emissions breakdown`}
             onClick={() => setTab(t)}
             className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors
               ${
@@ -103,16 +105,20 @@ export default function InsightsView({ activities = [], settings = {} }) {
 
       {/* Weekly line chart tab */}
       {tab === "Weekly" && (
-        <WeeklyEmissionsTab
-          activities={activities}
-          weeklyData={weeklyData}
-          dailyTarget={dailyTarget}
-        />
+        <div role="tabpanel" id="tabpanel-Weekly" aria-labelledby="tab-Weekly">
+          <WeeklyEmissionsTab
+            activities={activities}
+            weeklyData={weeklyData}
+            dailyTarget={dailyTarget}
+          />
+        </div>
       )}
 
       {/* Category breakdown tab */}
       {tab === "By Category" && (
-        <CategoryEmissionsTab categoryData={categoryData} maxCo2={maxCo2} />
+        <div role="tabpanel" id="tabpanel-By Category" aria-labelledby="tab-By Category">
+          <CategoryEmissionsTab categoryData={categoryData} maxCo2={maxCo2} />
+        </div>
       )}
     </div>
   );

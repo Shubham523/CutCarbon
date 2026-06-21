@@ -1,3 +1,4 @@
+import { memo } from "react";
 import PropTypes from "prop-types";
 
 /**
@@ -7,7 +8,7 @@ import PropTypes from "prop-types";
  * @param {Array} props.topEmitters - Sorted list of top carbon emitting activities.
  * @param {number} props.maxEmitterVal - Maximum emission value for scale.
  */
-export default function EmittersList({ topEmitters, maxEmitterVal }) {
+function EmittersList({ topEmitters, maxEmitterVal }) {
   return (
     <div>
       <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
@@ -58,3 +59,5 @@ EmittersList.propTypes = {
   ).isRequired,
   maxEmitterVal: PropTypes.number.isRequired,
 };
+
+export default memo(EmittersList);

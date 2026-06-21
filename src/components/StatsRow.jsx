@@ -1,3 +1,4 @@
+import { memo } from "react";
 import PropTypes from "prop-types";
 
 /**
@@ -7,7 +8,7 @@ import PropTypes from "prop-types";
  * @param {Object} props - The component props.
  * @param {Array} props.activities - List of activities logged by the user.
  */
-export default function StatsRow({ activities }) {
+function StatsRow({ activities }) {
   const avg = (
     activities.reduce((s, a) => s + (a.co2 ?? a.co2_score_kg ?? 0), 0) / 7
   ).toFixed(1);
@@ -47,3 +48,5 @@ export default function StatsRow({ activities }) {
 StatsRow.propTypes = {
   activities: PropTypes.arrayOf(PropTypes.object).isRequired,
 };
+
+export default memo(StatsRow);

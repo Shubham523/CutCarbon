@@ -1,3 +1,4 @@
+import { memo } from "react";
 import PropTypes from "prop-types";
 import {
   LineChart,
@@ -42,7 +43,7 @@ Tip.propTypes = {
  * @param {Array} props.weeklyData - Pre-calculated weekly data array.
  * @param {number} props.dailyTarget - Current user's daily emission target.
  */
-export default function WeeklyEmissionsTab({
+function WeeklyEmissionsTab({
   activities,
   weeklyData,
   dailyTarget,
@@ -110,3 +111,5 @@ WeeklyEmissionsTab.propTypes = {
   weeklyData: PropTypes.arrayOf(PropTypes.object).isRequired,
   dailyTarget: PropTypes.number.isRequired,
 };
+
+export default memo(WeeklyEmissionsTab);

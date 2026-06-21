@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, memo } from "react";
 import PropTypes from "prop-types";
 
 /**
@@ -8,7 +8,7 @@ import PropTypes from "prop-types";
  * @param {Object} props - The component props.
  * @param {Array} [props.activities] - List of activity logs.
  */
-export default function NetZeroScale({ activities = [] }) {
+function NetZeroScale({ activities = [] }) {
   const {
     emitted,
     saved,
@@ -135,3 +135,5 @@ export default function NetZeroScale({ activities = [] }) {
 NetZeroScale.propTypes = {
   activities: PropTypes.arrayOf(PropTypes.object),
 };
+
+export default memo(NetZeroScale);

@@ -2,6 +2,7 @@ import { useState, useEffect, lazy, Suspense, useCallback } from "react";
 import Sidebar from "./components/Sidebar";
 import TopAppBar from "./components/TopAppBar";
 import LoginScreen from "./components/LoginScreen";
+import ErrorBoundary from "./components/ErrorBoundary";
 const Dashboard = lazy(() => import("./components/Dashboard"));
 const InsightsView = lazy(() => import("./components/InsightsView"));
 const SettingsView = lazy(() => import("./components/SettingsView"));
@@ -81,8 +82,10 @@ export default function App() {
             });
             setActivities(docs);
           },
-          (error) => {
-            console.error("Firestore listener error:", error);
+          () => {
+            /* Firestore listener errors are handled silently; the UI
+               remains functional with stale or empty data until the
+               next successful snapshot delivery. */
           },
         );
       },
@@ -110,8 +113,9 @@ export default function App() {
               setSettings(docSnap.data().settings);
             }
           },
-          (error) => {
-            console.error("User doc listener error:", error);
+          () => {
+            /* Settings listener errors are handled silently; default
+               values remain active until a successful read. */
           },
         );
       },
@@ -132,8 +136,9 @@ export default function App() {
       const credential = GoogleAuthProvider.credentialFromResult(result);
       const token = credential?.accessToken;
       if (token) localStorage.setItem("google_fit_token", token);
-    } catch (error) {
-      console.error("Login failed:", error);
+    } catch (_) {
+      /* Login popup was cancelled or failed — no user-facing action needed.
+         Firebase Auth state listener will keep user as null. */
     }
   }, []);
 
@@ -146,8 +151,8 @@ export default function App() {
       const { signOut } = await import("firebase/auth");
       await signOut(auth);
       localStorage.removeItem("google_fit_token");
-    } catch (error) {
-      console.error("Logout failed:", error);
+    } catch (_) {
+      /* Sign-out failure is rare (network issue); the user can retry. */
     }
   }, []);
 
@@ -179,8 +184,7 @@ export default function App() {
         const { db } = await import("../firebase");
         const { deleteDoc, doc } = await import("firebase/firestore");
         await deleteDoc(doc(db, "users", user.uid, "logs", id));
-      } catch (error) {
-        console.error("Delete failed:", error);
+      } catch (_) {
         showToast("Could not delete — please try again.");
       }
     },
@@ -225,25 +229,32 @@ export default function App() {
           className="flex-1 px-5 md:px-8 py-8 pb-28 overflow-auto"
           aria-label={`${activeView} view`}
         >
-          <Suspense
-            fallback={<div className="text-center p-4">Loading...</div>}
-          >
-            {activeView === "dashboard" && (
-              <Dashboard
-                activities={activities}
-                onDelete={handleDelete}
-                onEntryUpdate={handleEntryUpdate}
-                user={user}
-                settings={settings}
-              />
-            )}
-            {activeView === "insights" && (
-              <InsightsView activities={activities} settings={settings} />
-            )}
-            {activeView === "settings" && (
-              <SettingsView user={user} settings={settings} />
-            )}
-          </Suspense>
+          <ErrorBoundary>
+            <Suspense
+              fallback={
+                <div className="text-center p-8" role="status" aria-live="polite">
+                  <span className="inline-block w-5 h-5 border-2 border-green-600 border-t-transparent rounded-full animate-spin" aria-hidden="true" />
+                  <p className="text-sm text-gray-400 mt-3">Loading view…</p>
+                </div>
+              }
+            >
+              {activeView === "dashboard" && (
+                <Dashboard
+                  activities={activities}
+                  onDelete={handleDelete}
+                  onEntryUpdate={handleEntryUpdate}
+                  user={user}
+                  settings={settings}
+                />
+              )}
+              {activeView === "insights" && (
+                <InsightsView activities={activities} settings={settings} />
+              )}
+              {activeView === "settings" && (
+                <SettingsView user={user} settings={settings} />
+              )}
+            </Suspense>
+          </ErrorBoundary>
         </main>
       </div>
 

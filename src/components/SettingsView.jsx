@@ -45,8 +45,7 @@ export default function SettingsView({ user, settings = {} }) {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setSaveStatus("saved");
       setTimeout(() => setSaveStatus("idle"), 3000);
-    } catch (err) {
-      console.error("Settings save failed:", err);
+    } catch (_) {
       setSaveStatus("error");
       setTimeout(() => setSaveStatus("idle"), 4000);
     }
