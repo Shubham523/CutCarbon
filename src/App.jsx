@@ -2,6 +2,7 @@ import { useState, useEffect, lazy, Suspense } from "react";
 import Sidebar from "./components/Sidebar";
 import TopAppBar from "./components/TopAppBar";
 import Dashboard from "./components/Dashboard";
+import LoginScreen from "./components/LoginScreen";
 const InsightsView = lazy(() => import("./components/InsightsView"));
 const SettingsView = lazy(() => import("./components/SettingsView"));
 import StickyActions from "./components/StickyActions";
@@ -154,19 +155,7 @@ export default function App() {
 
   // If not logged in, show the Login Screen
   if (!user) {
-    return (
-      <div className="h-screen flex flex-col items-center justify-center bg-white p-6">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">CutCarbon</h1>
-        <p className="text-gray-600 mb-8">Track your footprint effortlessly.</p>
-        <button
-          onClick={handleLogin}
-          aria-label="Sign in with Google"
-          className="w-full max-w-sm bg-gray-900 text-white py-4 rounded-full font-bold text-lg"
-        >
-          Sign in with Google
-        </button>
-      </div>
-    );
+    return <LoginScreen onLogin={handleLogin} />;
   }
 
   /**

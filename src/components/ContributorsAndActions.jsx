@@ -1,5 +1,7 @@
 import { useMemo } from "react";
 import PropTypes from "prop-types";
+import EmittersList from "./EmittersList";
+import SaversList from "./SaversList";
 
 /**
  * Returns advice based on the top carbon contributor.
@@ -86,7 +88,6 @@ export default function ContributorsAndActions({ activities = [] }) {
     let total = 0;
 
     activities.forEach((a) => {
-      // Use item_name, fallback to category, fallback to 'Unknown'
       const name = a.item_name || a.category || "Unknown";
 
       const score = Number(a.co2_score_kg ?? a.co2 ?? 0);
@@ -143,85 +144,12 @@ export default function ContributorsAndActions({ activities = [] }) {
       </h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Left Column: Visual Breakdown */}
         <div className="space-y-6">
-          {/* Emitters List */}
-          <div>
-            <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-red-500"></span>
-              Top Emitters (kg CO₂)
-            </h3>
-            {topEmitters.length === 0 ? (
-              <p className="text-xs text-gray-400 py-2">
-                No emitters recorded this week.
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {topEmitters.map((item) => {
-                  const pct = ((item.value / maxEmitterVal) * 100).toFixed(0);
-                  return (
-                    <div key={item.name} className="space-y-1">
-                      <div className="flex justify-between text-xs font-medium text-gray-600">
-                        <span>{item.name}</span>
-                        <span className="tabular-nums">
-                          {item.value.toFixed(1)} kg
-                        </span>
-                      </div>
-                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-red-500 rounded-full transition-all duration-500"
-                          style={{ width: `${pct}%` }}
-                          role="progressbar"
-                          aria-valuenow={item.value}
-                          aria-valuemin={0}
-                          aria-valuemax={maxEmitterVal}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Savers List */}
-          <div>
-            <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-green-500"></span>
-              Top Savers (kg CO₂ saved)
-            </h3>
-            {topSavers.length === 0 ? (
-              <p className="text-xs text-gray-400 py-2">
-                No savers recorded this week.
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {topSavers.map((item) => {
-                  const pct = ((item.value / maxSaverVal) * 100).toFixed(0);
-                  return (
-                    <div key={item.name} className="space-y-1">
-                      <div className="flex justify-between text-xs font-medium text-gray-600">
-                        <span>{item.name}</span>
-                        <span className="tabular-nums">
-                          {item.value.toFixed(1)} kg
-                        </span>
-                      </div>
-                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-green-500 rounded-full transition-all duration-500"
-                          style={{ width: `${pct}%` }}
-                          role="progressbar"
-                          aria-valuenow={item.value}
-                          aria-valuemin={0}
-                          aria-valuemax={maxSaverVal}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          <EmittersList
+            topEmitters={topEmitters}
+            maxEmitterVal={maxEmitterVal}
+          />
+          <SaversList topSavers={topSavers} maxSaverVal={maxSaverVal} />
         </div>
 
         {/* Right Column: Dynamic Insights */}
