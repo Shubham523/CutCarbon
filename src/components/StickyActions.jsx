@@ -167,6 +167,7 @@ const calculateTransitImpact = (durationMs, mode = 'solo_car', passengers = 1) =
 
 
 export default function StickyActions({ onAction, user }) {
+  const API_BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
   const [analyzing,          setAnalyzing]          = useState(false);
   const [syncing,            setSyncing]            = useState(false);
   const [detailedActivities, setDetailedActivities] = useState([]);
@@ -185,7 +186,7 @@ export default function StickyActions({ onAction, user }) {
     setAnalyzing(true);
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/api/process-grocery?user_id=${user.uid}`,
+        `${API_BASE_URL}/api/scan`,
         { method: 'POST', body: formData },
       );
       if (!response.ok) {
@@ -443,9 +444,9 @@ export default function StickyActions({ onAction, user }) {
         ([c, ms]) => ({ name: ACTIVITY_TYPES[c] ?? c, durMin: (ms / 60000).toFixed(1) }),
       ));
 
-      const url = `http://127.0.0.1:8000/api/sync-fitness?user_id=${user.uid}&duration_min=${durationMin}&activity_type=${mappedActivityStr}`;
+      const url = `${API_BASE_URL}/api/sync-fitness?user_id=${user.uid}&duration_min=${durationMin}&activity_type=${mappedActivityStr}`;
       console.log('👉 STEP 4.5: Firing backend request...', url);
-      const response = await fetch(url, { method: 'POST' });
+      const response = await fetch(`${API_BASE_URL}/api/sync`, { method: 'POST' });
       console.log('👉 STEP 4.6: Backend response status:', response.status);
 
       if (!response.ok) {
