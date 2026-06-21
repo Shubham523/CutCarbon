@@ -357,16 +357,10 @@ export default function ActivityFeed({ activities, onDelete, onEntryUpdate, user
   const merged = processAndMergeActivities(
     activities.filter(a => a.type === 'fitness' || a.type === 'transport'),
   );
-  const groceryLogs = activities.filter(a => a.type === 'grocery');
+  // Capture ALL non-fitness/non-transport items — matches the broadened isGrocery
+  // logic in groupActivities so no item is ever left ungrouped.
+  const groceryLogs = activities.filter(a => a.type !== 'fitness' && a.type !== 'transport');
   const groupedData = groupActivities([...merged, ...groceryLogs]);
-
-  const groupedIds = new Set(
-    Object.values(groupedData).flatMap(g => g.entries.map(e => e.id)),
-  );
-  const ungrouped = activities
-    .filter(a => !groupedIds.has(a.id))
-    .filter(a => a.type !== 'fitness' && a.type !== 'transport')
-    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
   const hasContent = activities.length > 0;
 
   return (
@@ -391,45 +385,6 @@ export default function ActivityFeed({ activities, onDelete, onEntryUpdate, user
         />
       ))}
 
-      {/* Flat list for non-grouped types (groceries, etc.) */}
-      {ungrouped.length > 0 && (
-        <ul role="list" className="divide-y divide-gray-100 mt-2">
-          {ungrouped.map(a => {
-            const co2Val = a.co2 ?? a.co2_score_kg ?? 0;
-            return (
-              <li
-                key={a.id}
-                className="group flex items-center gap-4 py-3"
-                aria-label={`${a.description}, ${co2Val} kg CO₂`}
-              >
-                <span className="text-xl leading-none shrink-0" role="img" aria-hidden="true">
-                  {a.icon}
-                </span>
-
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-900 font-medium truncate">{a.description}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    {a.category} · {relativeTime(a.timestamp)}
-                  </p>
-                </div>
-
-                <span className={`text-sm font-semibold tabular-nums shrink-0 ${IMPACT(co2Val)}`}>
-                  {co2Val === 0 ? 'Carbon-free' : `${co2Val.toFixed(2)} kg`}
-                </span>
-
-                <button
-                  onClick={() => onDelete(a.id)}
-                  className="opacity-0 group-hover:opacity-100 p-1 text-gray-300
-                    hover:text-red-400 transition-opacity shrink-0"
-                  aria-label={`Delete: ${a.description}`}
-                >
-                  <Trash2 size={14} />
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
     </section>
   );
 }

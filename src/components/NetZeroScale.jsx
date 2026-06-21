@@ -70,22 +70,22 @@ export default function NetZeroScale({ activities = [] }) {
         ) : (
           <>
             <div
-              style={{ width: `${emittedPercent}%` }}
-              className="h-full bg-red-500 transition-all duration-700 flex items-center justify-start pl-4"
-            >
-              {emittedPercent >= 15 && (
-                <span className="text-[10px] font-bold text-white tracking-wider">
-                  {emittedPercent.toFixed(0)}%
-                </span>
-              )}
-            </div>
-            <div
               style={{ width: `${savedPercent}%` }}
-              className="h-full bg-green-500 transition-all duration-700 flex items-center justify-end pr-4"
+              className="h-full bg-green-500 transition-all duration-700 flex items-center justify-start pl-4"
             >
               {savedPercent >= 15 && (
                 <span className="text-[10px] font-bold text-white tracking-wider">
                   {savedPercent.toFixed(0)}%
+                </span>
+              )}
+            </div>
+            <div
+              style={{ width: `${emittedPercent}%` }}
+              className="h-full bg-red-500 transition-all duration-700 flex items-center justify-end pr-4"
+            >
+              {emittedPercent >= 15 && (
+                <span className="text-[10px] font-bold text-white tracking-wider">
+                  {emittedPercent.toFixed(0)}%
                 </span>
               )}
             </div>
@@ -96,13 +96,13 @@ export default function NetZeroScale({ activities = [] }) {
       {/* Legend & Details */}
       {totalVolume > 0 && (
         <div className="flex justify-between items-center mt-3 text-xs">
-          <div className="flex items-center gap-1.5 text-red-600 font-medium">
-            <span className="w-2 h-2 rounded-full bg-red-500" />
-            <span>Emitted: {emitted.toFixed(1)} kg</span>
-          </div>
           <div className="flex items-center gap-1.5 text-green-600 font-medium">
             <span className="w-2 h-2 rounded-full bg-green-500" />
             <span>Saved: {saved.toFixed(1)} kg</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-red-600 font-medium">
+            <span className="w-2 h-2 rounded-full bg-red-500" />
+            <span>Emitted: {emitted.toFixed(1)} kg</span>
           </div>
         </div>
       )}

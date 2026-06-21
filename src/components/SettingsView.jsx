@@ -1,21 +1,17 @@
 import { useState, useEffect } from 'react';
-import { Bell, User, Sliders, Shield } from 'lucide-react';
+import { User, Sliders, Shield } from 'lucide-react';
 
 export default function SettingsView({ user, settings = {} }) {
-  const [dailyTarget,         setDailyTarget]         = useState(10);
-  const [weeklyDigest,        setWeeklyDigest]         = useState(true);
-  const [activityReminders,   setActivityReminders]    = useState(true);
-  const [publicProfile,       setPublicProfile]        = useState(false);
-  const [saveStatus,          setSaveStatus]           = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
+  const [dailyTarget, setDailyTarget] = useState(10);
+  const [publicProfile, setPublicProfile] = useState(false);
+  const [saveStatus,    setSaveStatus]    = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
 
   // Hydrate local form state whenever Firestore delivers fresh settings.
   // Using individual setters avoids a render loop (no object identity churn).
   useEffect(() => {
     if (!settings || Object.keys(settings).length === 0) return;
-    if (settings.dailyTargetKg    !== undefined) setDailyTarget(settings.dailyTargetKg);
-    if (settings.weeklyDigest     !== undefined) setWeeklyDigest(settings.weeklyDigest);
-    if (settings.activityReminders !== undefined) setActivityReminders(settings.activityReminders);
-    if (settings.publicProfile    !== undefined) setPublicProfile(settings.publicProfile);
+    if (settings.dailyTargetKg !== undefined) setDailyTarget(settings.dailyTargetKg);
+    if (settings.publicProfile  !== undefined) setPublicProfile(settings.publicProfile);
   }, [settings]);
 
   const handleSave = async () => {
@@ -29,9 +25,7 @@ export default function SettingsView({ user, settings = {} }) {
         body: JSON.stringify({
           user_id: user.uid,
           settings: {
-            dailyTargetKg:      dailyTarget,
-            weeklyDigest,
-            activityReminders,
+            dailyTargetKg: dailyTarget,
             publicProfile,
           },
         }),
@@ -47,29 +41,7 @@ export default function SettingsView({ user, settings = {} }) {
     }
   };
 
-  const TOGGLE_ITEMS = [
-    {
-      id:     'weekly-digest',
-      label:  'Weekly digest email',
-      desc:   'Receive a summary of your weekly emissions every Monday',
-      state:  weeklyDigest,
-      setter: setWeeklyDigest,
-    },
-    {
-      id:     'activity-reminders',
-      label:  'Activity log reminders',
-      desc:   'Get a daily nudge to log your activities at 8 PM',
-      state:  activityReminders,
-      setter: setActivityReminders,
-    },
-    {
-      id:     'public-profile',
-      label:  'Public leaderboard profile',
-      desc:   'Show your username on the community leaderboard',
-      state:  publicProfile,
-      setter: setPublicProfile,
-    },
-  ];
+
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -106,7 +78,9 @@ export default function SettingsView({ user, settings = {} }) {
               id="settings-email"
               type="email"
               defaultValue={user?.email ?? ''}
-              className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-green-600 focus:ring-1 focus:ring-green-100"
+              readOnly
+              disabled
+              className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-500 bg-gray-100 cursor-not-allowed"
             />
           </div>
         </div>
@@ -152,39 +126,6 @@ export default function SettingsView({ user, settings = {} }) {
         </div>
       </section>
 
-      {/* Notifications */}
-      <section aria-labelledby="section-notifications" className="border border-gray-200 rounded-lg bg-white overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
-          <h2 id="section-notifications" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-            <Bell size={15} className="text-gray-400" aria-hidden="true" />
-            Notifications
-          </h2>
-        </div>
-        <ul role="list" className="divide-y divide-gray-100">
-          {TOGGLE_ITEMS.map(item => (
-            <li key={item.id} className="flex items-center justify-between px-4 py-3">
-              <div>
-                <p className="text-sm font-medium text-gray-800">{item.label}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{item.desc}</p>
-              </div>
-              <button
-                id={`toggle-${item.id}`}
-                role="switch"
-                aria-checked={item.state}
-                aria-label={item.label}
-                onClick={() => item.setter(!item.state)}
-                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors shrink-0
-                  ${item.state ? 'bg-green-600' : 'bg-gray-200'}`}
-              >
-                <span
-                  className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transform transition-transform
-                    ${item.state ? 'translate-x-4.5' : 'translate-x-0.5'}`}
-                />
-              </button>
-            </li>
-          ))}
-        </ul>
-      </section>
 
       {/* Save */}
       <div className="flex items-center justify-end gap-3">

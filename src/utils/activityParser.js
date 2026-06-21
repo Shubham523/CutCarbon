@@ -146,9 +146,20 @@ export function processAndMergeActivities(rawActivities) {
 export function groupActivities(logs) {
   if (!logs?.length) return {};
 
-  return logs.reduce((acc, log) => {
-    if (log.type !== 'fitness' && log.type !== 'transport' && log.type !== 'grocery' && log.type !== 'scanned_product') return acc;
+  // Classify any non-fitness, non-transport entry as a grocery/scanned item
+  // so older docs with missing or unexpected `type` values still group correctly.
+  const isGrocery = (log) =>
+    log.type !== 'fitness' && log.type !== 'transport';
 
+  return logs.reduce((acc, log) => {
+    // Skip unknown types that are definitively neither fitness/transport nor grocery-like
+    if (log.type === 'fitness' || log.type === 'transport') {
+      // handled below
+    } else if (!isGrocery(log)) {
+      return acc;
+    }
+
+    // Derive a reliable calendar-day label regardless of whether date_string was stored
     const dateLabel = log.date_string
       ?? resolveDate(log.timestamp).toLocaleDateString('en-US', {
            weekday: 'long', month: 'short', day: 'numeric',
@@ -157,7 +168,7 @@ export function groupActivities(logs) {
     let actLabel;
     let groupKey;
 
-    if (log.type === 'grocery' || log.type === 'scanned_product') {
+    if (isGrocery(log)) {
       actLabel = 'Scanned Items';
       groupKey = `${dateLabel} - Scanned Items`;
     } else {
@@ -170,8 +181,9 @@ export function groupActivities(logs) {
         key:               groupKey,
         date_string:       dateLabel,
         item_name:         actLabel,
-        type:              log.type,
-        icon:              log.icon ?? (log.type === 'transport' ? '🚗' : (log.type === 'grocery' || log.type === 'scanned_product') ? '🛒' : '🏃'),
+        // Normalise type so MergedGroup renders the grocery layout for all non-transport entries
+        type:              isGrocery(log) ? 'grocery' : log.type,
+        icon:              log.icon ?? (log.type === 'transport' ? '🚗' : '🛒'),
         total_duration_ms: 0,
         total_prevented:   0,
         total_emitted:     0,
@@ -182,13 +194,19 @@ export function groupActivities(logs) {
     const g = acc[groupKey];
     g.total_duration_ms += (log.duration_ms ?? 0);
 
-    if (log.type === 'transport' || log.type === 'grocery' || log.type === 'scanned_product') {
-      g.total_emitted   += (log.co2_score_kg    ?? 0);
+    if (log.type === 'transport') {
+      g.total_emitted   += (log.co2_score_kg ?? 0);
+    } else if (isGrocery(log)) {
+      // Support both the canonical co2_score_kg field and the legacy co2 alias
+      g.total_emitted   += (log.co2_score_kg ?? log.co2 ?? 0);
     } else if (log.type === 'fitness') {
       g.total_prevented += (log.co2_prevented_kg ?? 0);
     }
 
-    g.entries.push(log);
+    // Attach a synthetic id to entries that lack one so groupedIds tracking works
+    g.entries.push(
+      log.id ? log : { ...log, id: `synthetic-${groupKey}-${g.entries.length}` },
+    );
     return acc;
   }, {});
 }
