@@ -185,10 +185,10 @@ export default function StickyActions({ onAction, user }) {
 
     setAnalyzing(true);
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/scan`,
-        { method: 'POST', body: formData },
-      );
+      const response = await fetch(`${API_BASE_URL}/api/process-grocery?user_id=${user.uid}`, {
+        method: 'POST',
+        body: formData,
+      });
       if (!response.ok) {
         throw new Error(`API returned status ${response.status}`);
       }
