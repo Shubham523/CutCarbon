@@ -5,14 +5,14 @@ import { processAndMergeActivities } from '../utils/activityParser';
 
 // ── Activity code → human-readable label ─────────────────────────────────────
 const ACTIVITY_TYPES = {
-  0:  'In Vehicle',
-  1:  'Biking',
-  2:  'On Foot',
-  3:  'Still',
-  4:  'Unknown',
-  7:  'Walking',
-  8:  'Running',
-  9:  'Aerobics',
+  0: 'In Vehicle',
+  1: 'Biking',
+  2: 'On Foot',
+  3: 'Still',
+  4: 'Unknown',
+  7: 'Walking',
+  8: 'Running',
+  9: 'Aerobics',
   16: 'Road Biking',
   17: 'Spinning',
   58: 'Treadmill',
@@ -22,11 +22,11 @@ const ACTIVITY_TYPES = {
 
 // ── Activity code → Python backend string ─────────────────────────────────────
 const BACKEND_MAP = {
-  1:  'cycling',
-  2:  'walking',           // On Foot
-  7:  'walking',
-  8:  'running',
-  9:  'running',           // Aerobics
+  1: 'cycling',
+  2: 'walking',           // On Foot
+  7: 'walking',
+  8: 'running',
+  9: 'running',           // Aerobics
   10: 'hiking',
   15: 'swimming',
   16: 'cycling',           // Road Biking
@@ -43,10 +43,10 @@ const BACKEND_MAP = {
  * solo_car is the baseline used to calculate how much a transit/carpool trip "saves".
  */
 const TRANSIT_EMISSIONS = {
-  solo_car:  0.192, // Baseline — average petrol car, solo occupancy
-  bus:       0.082, // Average city bus per passenger-km
-  train:     0.041, // Intercity / commuter train per passenger-km
-  metro:     0.041, // Urban metro / subway per passenger-km
+  solo_car: 0.192, // Baseline — average petrol car, solo occupancy
+  bus: 0.082, // Average city bus per passenger-km
+  train: 0.041, // Intercity / commuter train per passenger-km
+  metro: 0.041, // Urban metro / subway per passenger-km
   carpool_2: 0.096, // Solo car shared between 2 people (192 / 2)
   carpool_3: 0.064, // Solo car shared between 3 people (192 / 3)
 };
@@ -58,10 +58,10 @@ const AVG_SPEED_KMH = 40;
 // Average speeds (km/h) for active transport modes, used to estimate the
 // equivalent car distance that was replaced by active travel.
 const ACTIVE_SPEEDS_KMH = {
-  1:  15, // Biking
-  2:   5, // On Foot
-  7:   5, // Walking
-  8:  10, // Running
+  1: 15, // Biking
+  2: 5, // On Foot
+  7: 5, // Walking
+  8: 10, // Running
   16: 20, // Road Biking
 };
 
@@ -72,7 +72,7 @@ const ACTIVE_SPEEDS_KMH = {
  */
 const getEstimatedCO2 = (activityCode, durationMs) => {
   if (activityCode === 0) {
-    const hours      = durationMs / (1000 * 60 * 60);
+    const hours = durationMs / (1000 * 60 * 60);
     const distanceKm = hours * AVG_SPEED_KMH;
     return parseFloat((distanceKm * TRANSIT_EMISSIONS.solo_car).toFixed(2));
   }
@@ -87,7 +87,7 @@ const getEstimatedCO2 = (activityCode, durationMs) => {
 const getPreventedCO2 = (activityCode, durationMs) => {
   const speed = ACTIVE_SPEEDS_KMH[activityCode];
   if (!speed) return 0.0;
-  const hours      = durationMs / (1000 * 60 * 60);
+  const hours = durationMs / (1000 * 60 * 60);
   const distanceKm = hours * speed;
   return parseFloat((distanceKm * TRANSIT_EMISSIONS.solo_car).toFixed(2));
 };
@@ -100,7 +100,7 @@ const getPreventedCO2 = (activityCode, durationMs) => {
  */
 const getTransitCO2 = (mode, durationMs) => {
   const factor = TRANSIT_EMISSIONS[mode] ?? TRANSIT_EMISSIONS.solo_car;
-  const hours      = durationMs / (1000 * 60 * 60);
+  const hours = durationMs / (1000 * 60 * 60);
   const distanceKm = hours * AVG_SPEED_KMH;
   return parseFloat((distanceKm * factor).toFixed(2));
 };
@@ -117,7 +117,7 @@ const getTransitPreventedCO2 = (mode, durationMs) => {
   const factor = TRANSIT_EMISSIONS[mode] ?? TRANSIT_EMISSIONS.solo_car;
   const saving = TRANSIT_EMISSIONS.solo_car - factor;
   if (saving <= 0) return 0.0;
-  const hours      = durationMs / (1000 * 60 * 60);
+  const hours = durationMs / (1000 * 60 * 60);
   const distanceKm = hours * AVG_SPEED_KMH;
   return parseFloat((distanceKm * saving).toFixed(2));
 };
@@ -138,7 +138,7 @@ const getTransitPreventedCO2 = (mode, durationMs) => {
  * @returns {{ emitted_kg: number, prevented_kg: number }}
  */
 const calculateTransitImpact = (durationMs, mode = 'solo_car', passengers = 1) => {
-  const distanceKm       = (durationMs / (1000 * 60 * 60)) * AVG_SPEED_KMH;
+  const distanceKm = (durationMs / (1000 * 60 * 60)) * AVG_SPEED_KMH;
   const baselineEmission = distanceKm * TRANSIT_EMISSIONS.solo_car;
 
   let actualEmission;
@@ -157,7 +157,7 @@ const calculateTransitImpact = (durationMs, mode = 'solo_car', passengers = 1) =
   const preventedEmission = Math.max(0, baselineEmission - actualEmission);
 
   return {
-    emitted_kg:   parseFloat(actualEmission.toFixed(2)),
+    emitted_kg: parseFloat(actualEmission.toFixed(2)),
     prevented_kg: parseFloat(preventedEmission.toFixed(2)),
   };
 };
@@ -168,8 +168,8 @@ const calculateTransitImpact = (durationMs, mode = 'solo_car', passengers = 1) =
 
 export default function StickyActions({ onAction, user }) {
   const API_BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
-  const [analyzing,          setAnalyzing]          = useState(false);
-  const [syncing,            setSyncing]            = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [detailedActivities, setDetailedActivities] = useState([]);
 
   const groceryInputRef = useRef(null);
@@ -249,7 +249,7 @@ export default function StickyActions({ onAction, user }) {
     setSyncing(true);
     try {
       // ── STEP 1: Build 7-day time window ──────────────────────────────────
-      const endTimeMs   = new Date().getTime();
+      const endTimeMs = new Date().getTime();
       const startTimeMs = endTimeMs - (7 * 24 * 60 * 60 * 1000);
       console.log('👉 STEP 1: Querying Google Fit for last 7 days...', { startTimeMs, endTimeMs });
 
@@ -257,10 +257,10 @@ export default function StickyActions({ onAction, user }) {
       const aggregateRes = await fetch(
         'https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate',
         {
-          method:  'POST',
+          method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
-            'Content-Type':  'application/json',
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             aggregateBy: [{ dataTypeName: 'com.google.activity.segment' }],
@@ -268,7 +268,7 @@ export default function StickyActions({ onAction, user }) {
               minDurationMillis: 60000, // ignore segments shorter than 1 minute
             },
             startTimeMillis: startTimeMs,
-            endTimeMillis:   endTimeMs,
+            endTimeMillis: endTimeMs,
           }),
         },
       );
@@ -316,19 +316,19 @@ export default function StickyActions({ onAction, user }) {
           return null;
         }
 
-        const start      = new Date(parseInt(b.startTimeMillis));
+        const start = new Date(parseInt(b.startTimeMillis));
         const durationMs = parseInt(b.endTimeMillis) - parseInt(b.startTimeMillis);
 
         if (durationMs < 60000) return null; // ignore segments under 1 minute
 
         return {
-          type:              activityCode === 0 ? 'transport' : 'fitness',
-          item_name:         ACTIVITY_TYPES[activityCode] ?? `Activity Code ${activityCode}`,
-          co2_score_kg:      getEstimatedCO2(activityCode, durationMs),
-          co2_prevented_kg:  getPreventedCO2(activityCode, durationMs),
-          duration_ms:       durationMs,
-          timestamp:         start, // EXACT activity start time — not Date.now()
-          date_string:       start.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }),
+          type: activityCode === 0 ? 'transport' : 'fitness',
+          item_name: ACTIVITY_TYPES[activityCode] ?? `Activity Code ${activityCode}`,
+          co2_score_kg: getEstimatedCO2(activityCode, durationMs),
+          co2_prevented_kg: getPreventedCO2(activityCode, durationMs),
+          duration_ms: durationMs,
+          timestamp: start, // EXACT activity start time — not Date.now()
+          date_string: start.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }),
           activityCode, // keep raw code for downstream routing
         };
       }).filter(Boolean);
@@ -361,7 +361,7 @@ export default function StickyActions({ onAction, user }) {
 
       // ── STEP 3.5: Route — transport → Firestore, fitness → Firestore + backend
       const transportSegments = mergedActivities.filter((a) => a.type === 'transport');
-      const fitnessSegments   = mergedActivities.filter((a) => a.type === 'fitness');
+      const fitnessSegments = mergedActivities.filter((a) => a.type === 'fitness');
 
       /**
        * Normalises a detailedActivities entry into the exact Firestore document
@@ -369,20 +369,20 @@ export default function StickyActions({ onAction, user }) {
        * Replaces the JS Date timestamp with serverTimestamp() for server-side ordering.
        */
       const toFirestoreDoc = (a) => ({
-        user_id:          user.uid,
-        type:             a.type,             // 'transport' | 'fitness'
-        category:         a.type === 'transport' ? 'Transport' : 'Fitness',
-        icon:             a.type === 'transport' ? '🚗' : '🏃',
+        user_id: user.uid,
+        type: a.type,             // 'transport' | 'fitness'
+        category: a.type === 'transport' ? 'Transport' : 'Fitness',
+        icon: a.type === 'transport' ? '🚗' : '🏃',
         // Store BOTH description (display) and item_name (grouping key) explicitly.
-        description:      a.item_name,
-        item_name:        a.item_name,        // strict ACTIVITY_TYPES string e.g. "Walking"
-        co2_score_kg:     a.co2_score_kg,     // 0 for fitness, >0 for transport
+        description: a.item_name,
+        item_name: a.item_name,        // strict ACTIVITY_TYPES string e.g. "Walking"
+        co2_score_kg: a.co2_score_kg,     // 0 for fitness, >0 for transport
         co2_prevented_kg: a.co2_prevented_kg, // >0 for active travel, 0 for transport
-        duration_ms:      a.duration_ms,
-        date_string:      a.date_string,      // e.g. 'Monday, Jun 17'
+        duration_ms: a.duration_ms,
+        date_string: a.date_string,      // e.g. 'Monday, Jun 17'
         // EXACT activity start time from Google Fit startTimeMillis.
         // Timestamp.fromDate preserves the historical date — DO NOT use serverTimestamp().
-        timestamp:        Timestamp.fromDate(a.timestamp),
+        timestamp: Timestamp.fromDate(a.timestamp),
       });
 
 
@@ -396,7 +396,7 @@ export default function StickyActions({ onAction, user }) {
             }),
         );
 
-        const co2Values         = await Promise.all(transportWrites);
+        const co2Values = await Promise.all(transportWrites);
         const totalTransportCO2 = co2Values.reduce((s, v) => s + v, 0).toFixed(2);
         console.log(`👉 STEP 3.6: ${transportSegments.length} transport log(s) written — ${totalTransportCO2} kg CO₂`);
         onAction(`🚗 ${transportSegments.length} car trip${transportSegments.length > 1 ? 's' : ''} logged — ${totalTransportCO2} kg CO₂`);
@@ -434,10 +434,10 @@ export default function StickyActions({ onAction, user }) {
       }
 
       const [dominantType, totalDurMs] = dominantEntry;
-      const dominantCode      = Number(dominantType);
+      const dominantCode = Number(dominantType);
       const mappedActivityStr = BACKEND_MAP[dominantCode] ?? 'unknown';
-      const activityLabel     = ACTIVITY_TYPES[dominantCode] ?? 'Other Activity';
-      const durationMin       = parseFloat((totalDurMs / 60000).toFixed(2));
+      const activityLabel = ACTIVITY_TYPES[dominantCode] ?? 'Other Activity';
+      const durationMin = parseFloat((totalDurMs / 60000).toFixed(2));
 
       console.log(`👉 STEP 4: Dominant="${activityLabel}" (code ${dominantCode}) → backend="${mappedActivityStr}", ${durationMin} min`);
       console.log('👉 STEP 4 (all segments):', Object.entries(activityDurations).map(
@@ -446,7 +446,7 @@ export default function StickyActions({ onAction, user }) {
 
       const url = `${API_BASE_URL}/api/sync-fitness?user_id=${user.uid}&duration_min=${durationMin}&activity_type=${mappedActivityStr}`;
       console.log('👉 STEP 4.5: Firing backend request...', url);
-      const response = await fetch(`${API_BASE_URL}/api/sync`, { method: 'POST' });
+      const response = await fetch(`${API_BASE_URL}/api/sync-fitness?user_id=${user.uid}`, { method: 'POST' });
       console.log('👉 STEP 4.6: Backend response status:', response.status);
 
       if (!response.ok) {
